@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { StockItem, StockMovement, StockMovementType } from '../types';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 // Initial stock items
 const createInitialStock = (parkId: string): StockItem[] => [
@@ -59,14 +60,16 @@ interface StockState {
     getStockMovements: (stockItemId: string) => StockMovement[];
 
     // Actions
-    addStockItem: (item: Omit<StockItem, 'id' | 'created_at' | 'updated_at'>) => void;
-    updateStockItem: (itemId: string, updates: Partial<StockItem>) => void;
-    deleteStockItem: (itemId: string) => void;
+    fetchStock: (parkId?: string) => Promise<void>;
+    addStockItem: (item: Omit<StockItem, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+    updateStockItem: (itemId: string, updates: Partial<StockItem>) => Promise<void>;
+    deleteStockItem: (itemId: string) => Promise<void>;
 
     // Stock movements
-    addStockEntry: (itemId: string, quantity: number, reason: string, userId: string) => void;
-    decrementStock: (itemId: string, quantity: number, activityId: string | undefined, userId: string) => void;
-    adjustStock: (itemId: string, newQuantity: number, reason: string, userId: string) => void;
+    fetchMovements: (stockItemId: string) => Promise<void>;
+    addStockEntry: (itemId: string, quantity: number, reason: string, userId: string) => Promise<void>;
+    decrementStock: (itemId: string, quantity: number, activityId: string | undefined, userId: string) => Promise<void>;
+    adjustStock: (itemId: string, newQuantity: number, reason: string, userId: string) => Promise<void>;
 }
 
 export const useStockStore = create<StockState>()(
@@ -96,7 +99,31 @@ export const useStockStore = create<StockState>()(
                     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             },
 
-            addStockItem: (itemData) => {
+            fetchStock: async (parkId) => {
+                if (!isSupabaseConfigured()) return;
+                set({ isLoading: true });
+                let query = supabase!.from('stock_items').select('*');
+                if (parkId) query = query.eq('park_id', parkId);
+                const { data, error } = await query.order('name');
+                if (error) {
+                    console.error('Error fetching stock:', error);
+                    set({ isLoading: false });
+                    return;
+                }
+                set({ stockItems: data as StockItem[], isLoading: false });
+            },
+
+            addStockItem: async (itemData) => {
+                if (isSupabaseConfigured()) {
+                    const { data, error } = await supabase!
+                        .from('stock_items')
+                        .insert([itemData])
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    if (data) set(state => ({ stockItems: [...state.stockItems, data as StockItem] }));
+                    return;
+                }
                 const newItem: StockItem = {
                     ...itemData,
                     id: `stock_${Date.now()}`,
@@ -106,7 +133,14 @@ export const useStockStore = create<StockState>()(
                 set(state => ({ stockItems: [...state.stockItems, newItem] }));
             },
 
-            updateStockItem: (itemId, updates) => {
+            updateStockItem: async (itemId, updates) => {
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('stock_items')
+                        .update(updates)
+                        .eq('id', itemId);
+                    if (error) throw error;
+                }
                 set(state => ({
                     stockItems: state.stockItems.map(item =>
                         item.id === itemId
@@ -116,24 +150,67 @@ export const useStockStore = create<StockState>()(
                 }));
             },
 
-            deleteStockItem: (itemId) => {
+            deleteStockItem: async (itemId) => {
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!.from('stock_items').delete().eq('id', itemId);
+                    if (error) throw error;
+                }
                 set(state => ({
                     stockItems: state.stockItems.filter(s => s.id !== itemId),
                 }));
             },
 
-            addStockEntry: (itemId, quantity, reason, userId) => {
+            fetchMovements: async (stockItemId) => {
+                if (!isSupabaseConfigured()) return;
+                const { data, error } = await supabase!
+                    .from('stock_movements')
+                    .select('*')
+                    .eq('stock_item_id', stockItemId)
+                    .order('created_at', { ascending: false });
+                if (error) console.error('Error fetching movements:', error);
+                else set({ stockMovements: data as StockMovement[] });
+            },
+
+            addStockEntry: async (itemId, quantity, reason, userId) => {
                 const item = get().getStockItem(itemId);
                 if (!item) return;
 
-                const movement: StockMovement = {
-                    id: `mov_${Date.now()}`,
+                const movementData = {
                     stock_item_id: itemId,
                     park_id: item.park_id,
-                    type: 'entry',
+                    type: 'entry' as StockMovementType,
                     quantity,
                     reason,
                     created_by: userId,
+                };
+
+                if (isSupabaseConfigured()) {
+                    const { data: movement, error } = await supabase!
+                        .from('stock_movements')
+                        .insert([movementData])
+                        .select()
+                        .single();
+                    if (error) throw error;
+
+                    // Update stock item quantity
+                    const { error: updateError } = await supabase!
+                        .from('stock_items')
+                        .update({ quantity: item.quantity + quantity })
+                        .eq('id', itemId);
+                    if (updateError) throw updateError;
+
+                    set(state => ({
+                        stockItems: state.stockItems.map(s =>
+                            s.id === itemId ? { ...s, quantity: s.quantity + quantity } : s
+                        ),
+                        stockMovements: [movement as StockMovement, ...state.stockMovements],
+                    }));
+                    return;
+                }
+
+                const movement: StockMovement = {
+                    id: `mov_${Date.now()}`,
+                    ...movementData,
                     created_at: new Date().toISOString(),
                 };
 
@@ -147,19 +224,47 @@ export const useStockStore = create<StockState>()(
                 }));
             },
 
-            decrementStock: (itemId, quantity, activityId, userId) => {
+            decrementStock: async (itemId, quantity, activityId, userId) => {
                 const item = get().getStockItem(itemId);
                 if (!item) return;
 
-                const movement: StockMovement = {
-                    id: `mov_${Date.now()}`,
+                const movementData = {
                     stock_item_id: itemId,
                     park_id: item.park_id,
-                    type: 'exit',
+                    type: 'exit' as StockMovementType,
                     quantity,
                     activity_id: activityId,
                     reason: 'Vente',
                     created_by: userId,
+                };
+
+                if (isSupabaseConfigured()) {
+                    const { data: movement, error } = await supabase!
+                        .from('stock_movements')
+                        .insert([movementData])
+                        .select()
+                        .single();
+                    if (error) throw error;
+
+                    const newQty = Math.max(0, item.quantity - quantity);
+                    const { error: updateError } = await supabase!
+                        .from('stock_items')
+                        .update({ quantity: newQty })
+                        .eq('id', itemId);
+                    if (updateError) throw updateError;
+
+                    set(state => ({
+                        stockItems: state.stockItems.map(s =>
+                            s.id === itemId ? { ...s, quantity: newQty } : s
+                        ),
+                        stockMovements: [movement as StockMovement, ...state.stockMovements],
+                    }));
+                    return;
+                }
+
+                const movement: StockMovement = {
+                    id: `mov_${Date.now()}`,
+                    ...movementData,
                     created_at: new Date().toISOString(),
                 };
 
@@ -173,20 +278,46 @@ export const useStockStore = create<StockState>()(
                 }));
             },
 
-            adjustStock: (itemId, newQuantity, reason, userId) => {
+            adjustStock: async (itemId, newQuantity, reason, userId) => {
                 const item = get().getStockItem(itemId);
                 if (!item) return;
 
                 const difference = newQuantity - item.quantity;
-
-                const movement: StockMovement = {
-                    id: `mov_${Date.now()}`,
+                const movementData = {
                     stock_item_id: itemId,
                     park_id: item.park_id,
-                    type: 'adjustment',
+                    type: 'adjustment' as StockMovementType,
                     quantity: Math.abs(difference),
                     reason: `${reason} (${difference >= 0 ? '+' : ''}${difference})`,
                     created_by: userId,
+                };
+
+                if (isSupabaseConfigured()) {
+                    const { data: movement, error } = await supabase!
+                        .from('stock_movements')
+                        .insert([movementData])
+                        .select()
+                        .single();
+                    if (error) throw error;
+
+                    const { error: updateError } = await supabase!
+                        .from('stock_items')
+                        .update({ quantity: newQuantity })
+                        .eq('id', itemId);
+                    if (updateError) throw updateError;
+
+                    set(state => ({
+                        stockItems: state.stockItems.map(s =>
+                            s.id === itemId ? { ...s, quantity: newQuantity } : s
+                        ),
+                        stockMovements: [movement as StockMovement, ...state.stockMovements],
+                    }));
+                    return;
+                }
+
+                const movement: StockMovement = {
+                    id: `mov_${Date.now()}`,
+                    ...movementData,
                     created_at: new Date().toISOString(),
                 };
 

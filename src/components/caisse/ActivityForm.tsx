@@ -37,17 +37,19 @@ const ActivityForm: React.FC<ActivityFormProps> = ({ onClose, onActivityCreated,
 
         setIsSubmitting(true);
 
-        // Simuler un délai pour le feedback visuel
-        await new Promise(resolve => setTimeout(resolve, 300));
+        try {
+            const newActivity = await addActivity(parkId, userId, formData);
+            setIsSubmitting(false);
 
-        const newActivity = addActivity(parkId, userId, formData);
-
-        setIsSubmitting(false);
-
-        if (onActivityCreated) {
-            onActivityCreated(newActivity);
-        } else {
-            onClose();
+            if (onActivityCreated) {
+                onActivityCreated(newActivity);
+            } else {
+                onClose();
+            }
+        } catch (error) {
+            console.error('Error adding activity:', error);
+            setIsSubmitting(false);
+            alert('Erreur lors de l\'enregistrement de la vente');
         }
     };
 

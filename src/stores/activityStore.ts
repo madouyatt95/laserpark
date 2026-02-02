@@ -4,6 +4,7 @@ import { Activity, PaymentMethod, ActivityFormData, ActivityStatus } from '../ty
 import { useStockStore } from './stockStore';
 import { useCategoryStore } from './categoryStore';
 import { format, isToday, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 // Generate demo activities
 const generateDemoActivities = (parkId: string, userId: string): Activity[] => {
@@ -58,10 +59,11 @@ interface ActivityState {
     getRevenueByCategory: (parkId: string, date?: Date) => { categoryId: string; name: string; amount: number; color?: string }[];
 
     // Actions
-    addActivity: (parkId: string, userId: string, data: ActivityFormData) => Activity;
-    cancelActivity: (activityId: string, reason: string, userId: string) => void;
-    deleteActivity: (activityId: string) => void;
-    updateActivity: (activityId: string, updates: Partial<Activity>) => void;
+    fetchActivities: (parkId: string, date?: Date) => Promise<void>;
+    addActivity: (parkId: string, userId: string, data: ActivityFormData) => Promise<Activity>;
+    cancelActivity: (activityId: string, reason: string, userId: string) => Promise<void>;
+    deleteActivity: (activityId: string) => Promise<void>;
+    updateActivity: (activityId: string, updates: Partial<Activity>) => Promise<void>;
 }
 
 export const useActivityStore = create<ActivityState>()(
@@ -135,7 +137,64 @@ export const useActivityStore = create<ActivityState>()(
                 })).sort((a, b) => b.amount - a.amount);
             },
 
-            addActivity: (parkId: string, userId: string, data: ActivityFormData) => {
+            fetchActivities: async (parkId, date) => {
+                if (!isSupabaseConfigured()) return;
+
+                set({ isLoading: true });
+                let query = supabase!.from('activities').select('*').eq('park_id', parkId);
+
+                if (date) {
+                    const start = startOfDay(date).toISOString();
+                    const end = endOfDay(date).toISOString();
+                    query = query.gte('activity_date', start).lte('activity_date', end);
+                }
+
+                const { data, error } = await query.order('activity_date', { ascending: false });
+
+                if (error) {
+                    console.error('Error fetching activities:', error);
+                    set({ isLoading: false });
+                    return;
+                }
+
+                set({ activities: data as Activity[], isLoading: false });
+            },
+
+            addActivity: async (parkId, userId, data) => {
+                if (isSupabaseConfigured()) {
+                    const newActivityData = {
+                        park_id: parkId,
+                        category_id: data.category_id,
+                        amount: data.amount,
+                        quantity: data.quantity,
+                        payment_method: data.payment_method,
+                        comment: data.comment,
+                        created_by: userId,
+                        status: 'active',
+                    };
+
+                    const { data: newActivity, error } = await supabase!
+                        .from('activities')
+                        .insert([newActivityData])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+
+                    set(state => ({ activities: [newActivity as Activity, ...state.activities] }));
+
+                    // Check impacts stock (async background)
+                    const categoryStore = useCategoryStore.getState();
+                    const category = categoryStore.getCategory(data.category_id);
+                    if (category?.impacts_stock && category.stock_item_id) {
+                        const stockStore = useStockStore.getState();
+                        stockStore.decrementStock(category.stock_item_id, data.quantity, newActivity.id, userId);
+                    }
+
+                    return newActivity as Activity;
+                }
+
+                // Fallback Local
                 const now = new Date();
                 const newActivity: Activity = {
                     id: `act_${Date.now()}`,
@@ -153,10 +212,8 @@ export const useActivityStore = create<ActivityState>()(
 
                 set(state => ({ activities: [newActivity, ...state.activities] }));
 
-                // Check if category impacts stock
                 const categoryStore = useCategoryStore.getState();
                 const category = categoryStore.getCategory(data.category_id);
-
                 if (category?.impacts_stock && category.stock_item_id) {
                     const stockStore = useStockStore.getState();
                     stockStore.decrementStock(category.stock_item_id, data.quantity, newActivity.id, userId);
@@ -165,8 +222,22 @@ export const useActivityStore = create<ActivityState>()(
                 return newActivity;
             },
 
-            cancelActivity: (activityId: string, reason: string, userId: string) => {
+            cancelActivity: async (activityId, reason, userId) => {
                 const now = new Date();
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('activities')
+                        .update({
+                            status: 'cancelled',
+                            cancelled_reason: reason,
+                            cancelled_by: userId,
+                            cancelled_at: now.toISOString(),
+                        })
+                        .eq('id', activityId);
+
+                    if (error) throw error;
+                }
+
                 set(state => ({
                     activities: state.activities.map(a =>
                         a.id === activityId
@@ -182,13 +253,29 @@ export const useActivityStore = create<ActivityState>()(
                 }));
             },
 
-            deleteActivity: (activityId: string) => {
+            deleteActivity: async (activityId) => {
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('activities')
+                        .delete()
+                        .eq('id', activityId);
+
+                    if (error) throw error;
+                }
                 set(state => ({
                     activities: state.activities.filter(a => a.id !== activityId),
                 }));
             },
 
-            updateActivity: (activityId, updates) => {
+            updateActivity: async (activityId, updates) => {
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('activities')
+                        .update(updates)
+                        .eq('id', activityId);
+
+                    if (error) throw error;
+                }
                 set(state => ({
                     activities: state.activities.map(activity =>
                         activity.id === activityId

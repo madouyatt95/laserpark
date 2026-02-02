@@ -48,69 +48,84 @@ const ClosurePage: React.FC = () => {
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
     const netResult = totalRevenue - totalExpenses;
 
-    const handleCreateClosure = () => {
+    const handleCreateClosure = async () => {
         if (!user) return;
 
-        const closure = createClosure({
-            park_id: parkId,
-            closure_date: selectedDate,
-            status: 'pending',
-            total_revenue: totalRevenue,
-            total_expenses: totalExpenses,
-            net_result: netResult,
-            cash_total: revenueByPayment.cash,
-            wave_total: revenueByPayment.wave,
-            orange_money_total: revenueByPayment.orange_money,
-            activities_count: activities.length,
-            expenses_count: expenses.length,
-            created_by: user.id,
-            notes,
-        });
+        try {
+            const closure = await createClosure({
+                park_id: parkId,
+                closure_date: selectedDate,
+                status: 'pending',
+                total_revenue: totalRevenue,
+                total_expenses: totalExpenses,
+                net_result: netResult,
+                cash_total: revenueByPayment.cash,
+                wave_total: revenueByPayment.wave,
+                orange_money_total: revenueByPayment.orange_money,
+                activities_count: activities.length,
+                expenses_count: expenses.length,
+                created_by: user.id,
+                notes,
+            });
 
-        addLog({
-            park_id: parkId,
-            user_id: user.id,
-            user_name: user.full_name,
-            action: 'create',
-            entity_type: 'closure',
-            entity_id: closure.id,
-            description: `Clôture créée pour le ${formatDate(new Date(selectedDate))}`,
-            metadata: { total_revenue: totalRevenue, net_result: netResult },
-        });
+            addLog({
+                park_id: parkId,
+                user_id: user.id,
+                user_name: user.full_name,
+                action: 'create',
+                entity_type: 'closure',
+                entity_id: closure.id,
+                description: `Clôture créée pour le ${formatDate(new Date(selectedDate))}`,
+                metadata: { total_revenue: totalRevenue, net_result: netResult },
+            });
 
-        setShowConfirmation(false);
+            setShowConfirmation(false);
+        } catch (error) {
+            console.error('Error creating closure:', error);
+            alert('Erreur lors de la création de la clôture');
+        }
     };
 
-    const handleValidateClosure = () => {
+    const handleValidateClosure = async () => {
         if (!existingClosure || !user) return;
 
-        validateClosure(existingClosure.id, user.id);
+        try {
+            await validateClosure(existingClosure.id, user.id);
 
-        addLog({
-            park_id: parkId,
-            user_id: user.id,
-            user_name: user.full_name,
-            action: 'closure',
-            entity_type: 'closure',
-            entity_id: existingClosure.id,
-            description: `Clôture validée pour le ${formatDate(new Date(selectedDate))}`,
-        });
+            addLog({
+                park_id: parkId,
+                user_id: user.id,
+                user_name: user.full_name,
+                action: 'closure',
+                entity_type: 'closure',
+                entity_id: existingClosure.id,
+                description: `Clôture validée pour le ${formatDate(new Date(selectedDate))}`,
+            });
+        } catch (error) {
+            console.error('Error validating closure:', error);
+            alert('Erreur lors de la validation');
+        }
     };
 
-    const handleLockClosure = () => {
+    const handleLockClosure = async () => {
         if (!existingClosure || !user) return;
 
-        lockClosure(existingClosure.id);
+        try {
+            await lockClosure(existingClosure.id);
 
-        addLog({
-            park_id: parkId,
-            user_id: user.id,
-            user_name: user.full_name,
-            action: 'closure',
-            entity_type: 'closure',
-            entity_id: existingClosure.id,
-            description: `Clôture verrouillée pour le ${formatDate(new Date(selectedDate))}`,
-        });
+            addLog({
+                park_id: parkId,
+                user_id: user.id,
+                user_name: user.full_name,
+                action: 'closure',
+                entity_type: 'closure',
+                entity_id: existingClosure.id,
+                description: `Clôture verrouillée pour le ${formatDate(new Date(selectedDate))}`,
+            });
+        } catch (error) {
+            console.error('Error locking closure:', error);
+            alert('Erreur lors du verrouillage');
+        }
     };
 
     const getStatusBadge = () => {

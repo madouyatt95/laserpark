@@ -64,15 +64,21 @@ const CaissePage: React.FC = () => {
         setShowCancelModal(true);
     };
 
-    const handleConfirmCancel = () => {
+    const handleConfirmCancel = async () => {
         if (!selectedActivity || !cancelReason.trim()) {
             alert('Veuillez entrer une raison pour l\'annulation');
             return;
         }
-        cancelActivity(selectedActivity.id, cancelReason, user?.id || '');
-        setShowCancelModal(false);
-        setSelectedActivity(null);
-        setCancelReason('');
+
+        try {
+            await cancelActivity(selectedActivity.id, cancelReason, user?.id || '');
+            setShowCancelModal(false);
+            setSelectedActivity(null);
+            setCancelReason('');
+        } catch (error) {
+            console.error('Error cancelling activity:', error);
+            alert('Erreur lors de l\'annulation');
+        }
     };
 
     const handleActivityCreated = (newActivity: Activity) => {

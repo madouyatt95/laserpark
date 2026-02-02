@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, UserRole } from '../types';
 import { useUserStore } from './userStore';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthState {
     user: User | null;
@@ -11,7 +12,7 @@ interface AuthState {
 
     // Actions
     login: (email: string, password: string) => Promise<boolean>;
-    logout: () => void;
+    logout: () => Promise<void>;
     clearError: () => void;
     hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
     canAccessPark: (parkId: string) => boolean;
@@ -28,10 +29,44 @@ export const useAuthStore = create<AuthState>()(
             login: async (email: string, password: string) => {
                 set({ isLoading: true, error: null });
 
-                // Simulate API delay
-                await new Promise(resolve => setTimeout(resolve, 800));
+                // Option A: Supabase Auth
+                if (isSupabaseConfigured()) {
+                    try {
+                        const { data, error } = await supabase!.auth.signInWithPassword({
+                            email,
+                            password,
+                        });
 
-                // Use userStore to validate credentials
+                        if (error) throw error;
+
+                        if (data.user) {
+                            // Get profile from profiles table
+                            const { data: profile, error: profileError } = await supabase!
+                                .from('profiles')
+                                .select('*')
+                                .eq('id', data.user.id)
+                                .single();
+
+                            if (profileError) throw profileError;
+
+                            set({
+                                user: profile as User,
+                                isAuthenticated: true,
+                                isLoading: false
+                            });
+                            return true;
+                        }
+                    } catch (err: any) {
+                        set({
+                            error: err.message || 'Erreur lors de la connexion',
+                            isLoading: false
+                        });
+                        return false;
+                    }
+                }
+
+                // Option B: Fallback Local Demo Mode
+                await new Promise(resolve => setTimeout(resolve, 800));
                 const userStore = useUserStore.getState();
                 const validatedUser = userStore.validateCredentials(email, password);
 
@@ -45,13 +80,16 @@ export const useAuthStore = create<AuthState>()(
                 }
 
                 set({
-                    error: 'Email ou mot de passe incorrect',
+                    error: 'Email ou mot de passe incorrect (Demo Mode)',
                     isLoading: false
                 });
                 return false;
             },
 
-            logout: () => {
+            logout: async () => {
+                if (isSupabaseConfigured()) {
+                    await supabase!.auth.signOut();
+                }
                 set({ user: null, isAuthenticated: false, error: null });
             },
 

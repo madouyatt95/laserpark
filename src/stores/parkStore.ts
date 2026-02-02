@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Park } from '../types';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 // Initial demo parks
 const INITIAL_PARKS: Park[] = [
@@ -47,10 +48,11 @@ interface ParkState {
     getActiveParks: () => Park[];
 
     // Actions
+    fetchParks: () => Promise<void>;
     selectPark: (parkId: string) => void;
-    addPark: (park: Omit<Park, 'id' | 'created_at' | 'updated_at'>) => void;
-    updatePark: (parkId: string, updates: Partial<Park>) => void;
-    toggleParkStatus: (parkId: string) => void;
+    addPark: (park: Omit<Park, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+    updatePark: (parkId: string, updates: Partial<Park>) => Promise<void>;
+    toggleParkStatus: (parkId: string) => Promise<void>;
 }
 
 export const useParkStore = create<ParkState>()(
@@ -73,11 +75,44 @@ export const useParkStore = create<ParkState>()(
                 return get().parks.filter(p => p.is_active);
             },
 
+            fetchParks: async () => {
+                if (!isSupabaseConfigured()) return;
+
+                set({ isLoading: true });
+                const { data, error } = await supabase!
+                    .from('parks')
+                    .select('*')
+                    .order('name');
+
+                if (error) {
+                    console.error('Error fetching parks:', error);
+                    set({ isLoading: false });
+                    return;
+                }
+
+                set({ parks: data as Park[], isLoading: false });
+            },
+
             selectPark: (parkId: string) => {
                 set({ selectedParkId: parkId });
             },
 
-            addPark: (parkData) => {
+            addPark: async (parkData) => {
+                if (isSupabaseConfigured()) {
+                    const { data, error } = await supabase!
+                        .from('parks')
+                        .insert([parkData])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    if (data) {
+                        set(state => ({ parks: [...state.parks, data as Park] }));
+                    }
+                    return;
+                }
+
+                // Fallback Local
                 const newPark: Park = {
                     ...parkData,
                     id: `park_${Date.now()}`,
@@ -87,7 +122,16 @@ export const useParkStore = create<ParkState>()(
                 set(state => ({ parks: [...state.parks, newPark] }));
             },
 
-            updatePark: (parkId, updates) => {
+            updatePark: async (parkId, updates) => {
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('parks')
+                        .update(updates)
+                        .eq('id', parkId);
+
+                    if (error) throw error;
+                }
+
                 set(state => ({
                     parks: state.parks.map(park =>
                         park.id === parkId
@@ -97,11 +141,25 @@ export const useParkStore = create<ParkState>()(
                 }));
             },
 
-            toggleParkStatus: (parkId) => {
+            toggleParkStatus: async (parkId) => {
+                const park = get().parks.find(p => p.id === parkId);
+                if (!park) return;
+
+                const newStatus = !park.is_active;
+
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('parks')
+                        .update({ is_active: newStatus })
+                        .eq('id', parkId);
+
+                    if (error) throw error;
+                }
+
                 set(state => ({
                     parks: state.parks.map(park =>
                         park.id === parkId
-                            ? { ...park, is_active: !park.is_active, updated_at: new Date().toISOString() }
+                            ? { ...park, is_active: newStatus, updated_at: new Date().toISOString() }
                             : park
                     ),
                 }));

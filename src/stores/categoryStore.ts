@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Category, CategoryType } from '../types';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 // Initial demo categories
 const createInitialCategories = (parkId: string): Category[] => [
@@ -183,10 +184,11 @@ interface CategoryState {
     getExpenseCategories: (parkId: string) => Category[];
 
     // Actions
-    addCategory: (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>) => void;
-    updateCategory: (categoryId: string, updates: Partial<Category>) => void;
-    toggleCategoryStatus: (categoryId: string) => void;
-    deleteCategory: (categoryId: string) => void;
+    fetchCategories: (parkId?: string) => Promise<void>;
+    addCategory: (category: Omit<Category, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+    updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<void>;
+    toggleCategoryStatus: (categoryId: string) => Promise<void>;
+    deleteCategory: (categoryId: string) => Promise<void>;
 }
 
 export const useCategoryStore = create<CategoryState>()(
@@ -219,13 +221,45 @@ export const useCategoryStore = create<CategoryState>()(
                 return get().getCategoriesByType(parkId, 'expense');
             },
 
-            addCategory: (categoryData) => {
+            fetchCategories: async (parkId) => {
+                if (!isSupabaseConfigured()) return;
+
+                set({ isLoading: true });
+                let query = supabase!.from('categories').select('*');
+                if (parkId) query = query.eq('park_id', parkId);
+
+                const { data, error } = await query.order('sort_order');
+
+                if (error) {
+                    console.error('Error fetching categories:', error);
+                    set({ isLoading: false });
+                    return;
+                }
+
+                set({ categories: data as Category[], isLoading: false });
+            },
+
+            addCategory: async (categoryData) => {
                 const maxOrder = Math.max(
                     ...get().categories
                         .filter(c => c.park_id === categoryData.park_id && c.type === categoryData.type)
                         .map(c => c.sort_order),
                     0
                 );
+
+                if (isSupabaseConfigured()) {
+                    const { data, error } = await supabase!
+                        .from('categories')
+                        .insert([{ ...categoryData, sort_order: maxOrder + 1 }])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    if (data) {
+                        set(state => ({ categories: [...state.categories, data as Category] }));
+                    }
+                    return;
+                }
 
                 const newCategory: Category = {
                     ...categoryData,
@@ -237,7 +271,16 @@ export const useCategoryStore = create<CategoryState>()(
                 set(state => ({ categories: [...state.categories, newCategory] }));
             },
 
-            updateCategory: (categoryId, updates) => {
+            updateCategory: async (categoryId, updates) => {
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('categories')
+                        .update(updates)
+                        .eq('id', categoryId);
+
+                    if (error) throw error;
+                }
+
                 set(state => ({
                     categories: state.categories.map(category =>
                         category.id === categoryId
@@ -247,17 +290,38 @@ export const useCategoryStore = create<CategoryState>()(
                 }));
             },
 
-            toggleCategoryStatus: (categoryId) => {
+            toggleCategoryStatus: async (categoryId) => {
+                const category = get().categories.find(c => c.id === categoryId);
+                if (!category) return;
+                const newStatus = !category.is_active;
+
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('categories')
+                        .update({ is_active: newStatus })
+                        .eq('id', categoryId);
+
+                    if (error) throw error;
+                }
+
                 set(state => ({
                     categories: state.categories.map(category =>
                         category.id === categoryId
-                            ? { ...category, is_active: !category.is_active, updated_at: new Date().toISOString() }
+                            ? { ...category, is_active: newStatus, updated_at: new Date().toISOString() }
                             : category
                     ),
                 }));
             },
 
-            deleteCategory: (categoryId) => {
+            deleteCategory: async (categoryId) => {
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('categories')
+                        .delete()
+                        .eq('id', categoryId);
+
+                    if (error) throw error;
+                }
                 set(state => ({
                     categories: state.categories.filter(c => c.id !== categoryId),
                 }));

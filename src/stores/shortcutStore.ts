@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PaymentMethod } from '../types';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface QuickShortcut {
     id: string;
@@ -86,11 +87,12 @@ interface ShortcutState {
     getShortcut: (shortcutId: string) => QuickShortcut | undefined;
 
     // Actions
-    addShortcut: (data: Omit<QuickShortcut, 'id' | 'created_at' | 'sort_order'>) => void;
-    updateShortcut: (shortcutId: string, updates: Partial<QuickShortcut>) => void;
-    deleteShortcut: (shortcutId: string) => void;
-    toggleShortcut: (shortcutId: string) => void;
-    reorderShortcuts: (parkId: string, shortcutIds: string[]) => void;
+    fetchShortcuts: (parkId?: string) => Promise<void>;
+    addShortcut: (data: Omit<QuickShortcut, 'id' | 'created_at' | 'sort_order'>) => Promise<void>;
+    updateShortcut: (shortcutId: string, updates: Partial<QuickShortcut>) => Promise<void>;
+    deleteShortcut: (shortcutId: string) => Promise<void>;
+    toggleShortcut: (shortcutId: string) => Promise<void>;
+    reorderShortcuts: (parkId: string, shortcutIds: string[]) => Promise<void>;
 }
 
 export const useShortcutStore = create<ShortcutState>()(
@@ -108,9 +110,29 @@ export const useShortcutStore = create<ShortcutState>()(
                 return get().shortcuts.find(s => s.id === shortcutId);
             },
 
-            addShortcut: (data) => {
+            fetchShortcuts: async (parkId) => {
+                if (!isSupabaseConfigured()) return;
+                let query = supabase!.from('shortcuts').select('*');
+                if (parkId) query = query.eq('park_id', parkId);
+                const { data, error } = await query.order('sort_order');
+                if (error) console.error('Error fetching shortcuts:', error);
+                else set({ shortcuts: data as QuickShortcut[] });
+            },
+
+            addShortcut: async (data) => {
                 const parkShortcuts = get().shortcuts.filter(s => s.park_id === data.park_id);
                 const maxOrder = Math.max(...parkShortcuts.map(s => s.sort_order), 0);
+
+                if (isSupabaseConfigured()) {
+                    const { data: newShortcut, error } = await supabase!
+                        .from('shortcuts')
+                        .insert([{ ...data, sort_order: maxOrder + 1 }])
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    if (newShortcut) set(state => ({ shortcuts: [...state.shortcuts, newShortcut as QuickShortcut] }));
+                    return;
+                }
 
                 const newShortcut: QuickShortcut = {
                     ...data,
@@ -121,7 +143,14 @@ export const useShortcutStore = create<ShortcutState>()(
                 set(state => ({ shortcuts: [...state.shortcuts, newShortcut] }));
             },
 
-            updateShortcut: (shortcutId, updates) => {
+            updateShortcut: async (shortcutId, updates) => {
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('shortcuts')
+                        .update(updates)
+                        .eq('id', shortcutId);
+                    if (error) throw error;
+                }
                 set(state => ({
                     shortcuts: state.shortcuts.map(s =>
                         s.id === shortcutId ? { ...s, ...updates } : s
@@ -129,21 +158,44 @@ export const useShortcutStore = create<ShortcutState>()(
                 }));
             },
 
-            deleteShortcut: (shortcutId) => {
+            deleteShortcut: async (shortcutId) => {
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!.from('shortcuts').delete().eq('id', shortcutId);
+                    if (error) throw error;
+                }
                 set(state => ({
                     shortcuts: state.shortcuts.filter(s => s.id !== shortcutId),
                 }));
             },
 
-            toggleShortcut: (shortcutId) => {
+            toggleShortcut: async (shortcutId) => {
+                const shortcut = get().shortcuts.find(s => s.id === shortcutId);
+                if (!shortcut) return;
+                const newStatus = !shortcut.is_active;
+
+                if (isSupabaseConfigured()) {
+                    const { error } = await supabase!
+                        .from('shortcuts')
+                        .update({ is_active: newStatus })
+                        .eq('id', shortcutId);
+                    if (error) throw error;
+                }
                 set(state => ({
                     shortcuts: state.shortcuts.map(s =>
-                        s.id === shortcutId ? { ...s, is_active: !s.is_active } : s
+                        s.id === shortcutId ? { ...s, is_active: newStatus } : s
                     ),
                 }));
             },
 
-            reorderShortcuts: (parkId, shortcutIds) => {
+            reorderShortcuts: async (parkId, shortcutIds) => {
+                if (isSupabaseConfigured()) {
+                    // Update each shortcut order in Supabase
+                    const updates = shortcutIds.map((id, index) =>
+                        supabase!.from('shortcuts').update({ sort_order: index }).eq('id', id)
+                    );
+                    await Promise.all(updates);
+                }
+
                 set(state => ({
                     shortcuts: state.shortcuts.map(s => {
                         if (s.park_id !== parkId) return s;
