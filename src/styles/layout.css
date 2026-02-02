@@ -13,8 +13,18 @@
 .app-content {
     flex: 1;
     padding: var(--spacing-4);
-    padding-bottom: calc(var(--bottom-nav-height) + var(--spacing-4));
+    padding-bottom: calc(var(--bottom-nav-height) + var(--spacing-6));
     overflow-y: auto;
+    width: 100%;
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+}
+
+@media (max-width: 480px) {
+    .app-content {
+        padding: var(--spacing-3);
+        padding-bottom: calc(var(--bottom-nav-height) + var(--spacing-6));
+    }
 }
 
 /* --- Bottom Navigation --- */
@@ -24,15 +34,15 @@
     left: 0;
     right: 0;
     height: var(--bottom-nav-height);
-    background: rgba(10, 10, 15, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid var(--color-border);
+    background: rgba(10, 10, 15, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, var(--spacing-2));
+    z-index: 1000;
 }
 
 .bottom-nav-item {
@@ -113,31 +123,33 @@
 }
 
 /* --- Grid Layouts --- */
-.grid-2 {
+.grid-2,
+.grid-3,
+.grid-4 {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: var(--spacing-4);
 }
 
-.grid-3 {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-4);
+@media (min-width: 480px) {
+    .grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (min-width: 768px) {
     .grid-3 {
         grid-template-columns: repeat(3, 1fr);
     }
-}
 
-.grid-4 {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-4);
-}
-
-@media (min-width: 768px) {
     .grid-4 {
         grid-template-columns: repeat(4, 1fr);
     }
@@ -209,35 +221,38 @@
     color: var(--color-danger);
 }
 
-/* --- Tabs --- */
-.tabs {
-    display: flex;
-    gap: var(--spacing-2);
-    padding: var(--spacing-1);
-    background: var(--color-bg-tertiary);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-4);
+/* --- Glassmorphism & UI Enhancements --- */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4);
+    box-shadow: var(--shadow-lg);
 }
 
-.tab {
-    flex: 1;
-    padding: var(--spacing-2) var(--spacing-4);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text-secondary);
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: all var(--transition-fast);
+.premium-gradient {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
 }
 
-.tab:hover {
-    color: var(--color-text-primary);
+.text-gradient {
+    background: linear-gradient(135deg, #fff 0%, var(--color-primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
-.tab.active {
-    background: var(--color-bg-elevated);
-    color: var(--color-primary);
-    box-shadow: var(--shadow-sm);
+/* Touch targets optimization */
+button,
+input,
+.list-item,
+.bottom-nav-item {
+    min-height: 48px;
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: var(--font-size-xl);
+    }
 }

@@ -8,19 +8,23 @@
 }
 
 .summary-card {
-    background: var(--color-bg-card);
-    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-xl);
     padding: var(--spacing-5);
     display: flex;
     align-items: center;
     gap: var(--spacing-4);
+    box-shadow: var(--shadow-md);
 }
 
 .summary-card.total {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     border: none;
     margin-bottom: var(--spacing-4);
+    box-shadow: var(--shadow-glow-sm);
 }
 
 .summary-card.total .summary-card-icon {
@@ -63,8 +67,14 @@
 
 .summary-cards-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-3);
+}
+
+@media (min-width: 480px) {
+    .summary-cards-row {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .summary-cards-row .summary-card {

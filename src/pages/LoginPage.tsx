@@ -32,13 +32,13 @@ const LoginPage: React.FC = () => {
             <div className="login-container">
                 <div className="login-logo">
                     <div className="login-logo-icon">
-                        <Zap size={32} />
+                        <img src="/pwa-192x192.png" alt="LaserPark Logo" style={{ width: '100%', height: '100%', borderRadius: 'inherit' }} />
                     </div>
-                    <h1 className="login-title">LaserPark</h1>
+                    <h1 className="login-title"><span className="text-gradient">LaserPark</span></h1>
                     <p className="login-subtitle">Gestion Multi-Parcs</p>
                 </div>
 
-                <form className="login-form" onSubmit={handleSubmit}>
+                <form className="login-form glass-panel" onSubmit={handleSubmit}>
                     {error && (
                         <div className="login-error">
                             <AlertCircle size={18} />

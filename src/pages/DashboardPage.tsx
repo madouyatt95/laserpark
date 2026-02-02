@@ -47,7 +47,9 @@ const DashboardPage: React.FC = () => {
         <div className="page dashboard">
             <div className="page-header">
                 <h1 className="page-title">
-                    {isSuperAdmin ? 'Vue Globale' : `Tableau de bord`}
+                    <span className="text-gradient">
+                        {isSuperAdmin ? 'Vue Globale' : `Tableau de bord`}
+                    </span>
                 </h1>
                 <p className="page-subtitle">
                     {new Date().toLocaleDateString('fr-FR', {

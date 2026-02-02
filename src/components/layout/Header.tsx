@@ -24,6 +24,9 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
     return (
         <header className="header">
             <div className="header-left">
+                <div className="header-logo">
+                    <img src="/pwa-192x192.png" alt="LaserPark Logo" className="logo-img" />
+                </div>
                 {isSuperAdmin ? (
                     <div className="park-selector">
                         <select
@@ -41,7 +44,9 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
                     </div>
                 ) : (
                     <div className="header-park-name">
-                        {selectedPark?.name || title || 'LaserPark'}
+                        <span className="text-gradient">
+                            {selectedPark?.name || title || 'LaserPark'}
+                        </span>
                     </div>
                 )}
             </div>
