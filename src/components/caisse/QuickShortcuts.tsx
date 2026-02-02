@@ -5,6 +5,7 @@ import { useActivityStore } from '../../stores/activityStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useShortcutStore } from '../../stores/shortcutStore';
 import { formatCurrency } from '../../utils/helpers';
+import { triggerHaptic } from '../../utils/haptics';
 import './QuickShortcuts.css';
 
 interface QuickShortcutsProps {
@@ -54,6 +55,7 @@ const QuickShortcuts: React.FC<QuickShortcutsProps> = ({ parkId, onSaleComplete 
 
         setShowQuantityPicker(false);
         setActiveShortcut(null);
+        triggerHaptic('success'); // Haptic feedback on sale
         onSaleComplete?.();
     };
 
