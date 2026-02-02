@@ -1,0 +1,289 @@
+/* ============================================
+   Dashboard Styles
+   ============================================ */
+
+/* --- KPI Grid --- */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+}
+
+.kpi-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    transition: all var(--transition-fast);
+}
+
+.kpi-card:hover {
+    border-color: var(--color-border-hover);
+    transform: translateY(-2px);
+}
+
+.kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.kpi-card.revenue .kpi-icon {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.kpi-card.expenses .kpi-icon {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
+.kpi-card.result .kpi-icon {
+    background: var(--color-primary-glow);
+    color: var(--color-primary);
+}
+
+.kpi-card.activities .kpi-icon {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.kpi-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+    min-width: 0;
+}
+
+.kpi-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.kpi-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+}
+
+.kpi-value.positive {
+    color: var(--color-success);
+}
+
+.kpi-value.negative {
+    color: var(--color-danger);
+}
+
+/* --- Alerts --- */
+.alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.alert-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3) var(--spacing-4);
+    background: var(--color-warning-bg);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-lg);
+}
+
+.alert-icon {
+    color: var(--color-warning);
+    flex-shrink: 0;
+}
+
+.alert-text {
+    font-size: var(--font-size-sm);
+    color: var(--color-warning-light);
+}
+
+/* --- Category Stats --- */
+.category-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.category-stat-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
+}
+
+.category-stat-rank {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+}
+
+.category-stat-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.category-stat-name {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    display: block;
+    margin-bottom: var(--spacing-2);
+}
+
+.category-stat-bar {
+    height: 6px;
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.category-stat-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal);
+}
+
+.category-stat-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    white-space: nowrap;
+}
+
+/* --- Park Comparison --- */
+.park-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.park-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4);
+    transition: all var(--transition-fast);
+}
+
+.park-card:hover {
+    border-color: var(--color-border-hover);
+}
+
+.park-card.selected {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-glow-sm);
+}
+
+.park-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: var(--spacing-3);
+}
+
+.park-card-name {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.park-card-location {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+}
+
+.park-card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-3);
+}
+
+.park-stat {
+    text-align: center;
+}
+
+.park-stat-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    margin-bottom: var(--spacing-1);
+}
+
+.park-stat-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+.park-stat-value.positive {
+    color: var(--color-success);
+}
+
+.park-stat-value.negative {
+    color: var(--color-danger);
+}
+
+/* --- Quick Actions --- */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-3);
+}
+
+.quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-4);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.quick-action-btn:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-border-hover);
+    transform: translateY(-2px);
+}
+
+.quick-action-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    background: var(--color-primary-glow);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quick-action-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+}

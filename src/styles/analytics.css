@@ -1,0 +1,162 @@
+/* ============================================
+   Analytics Page Styles
+   ============================================ */
+
+.period-selector {
+    display: flex;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-6);
+}
+
+.period-btn {
+    flex: 1;
+    padding: var(--spacing-3);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.period-btn:hover {
+    background: var(--color-bg-elevated);
+}
+
+.period-btn.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.comparison-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+}
+
+.comparison-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4);
+}
+
+.comparison-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-2);
+}
+
+.comparison-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.comparison-change {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.comparison-change.positive {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--color-success);
+}
+
+.comparison-change.negative {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--color-danger);
+}
+
+.comparison-value {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.comparison-previous {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+}
+
+.chart-container {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4);
+}
+
+.heatmap-container {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-4);
+}
+
+.heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-4);
+}
+
+.heatmap-cell {
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition: transform var(--transition-fast);
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.1);
+}
+
+.heatmap-hour {
+    font-size: 10px;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+}
+
+.heatmap-count {
+    font-size: 8px;
+    color: var(--color-text-tertiary);
+}
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+}
+
+.heatmap-legend-bar {
+    width: 80px;
+    height: 8px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(to right,
+            var(--color-bg-tertiary),
+            rgba(139, 92, 246, 0.2),
+            rgba(139, 92, 246, 0.5),
+            rgba(139, 92, 246, 0.9));
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
