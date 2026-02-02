@@ -30,6 +30,7 @@ export interface User {
   park_id: string | null; // null for super_admin
   avatar_url?: string;
   is_active: boolean;
+  is_demo?: boolean;
   created_at: string;
   updated_at: string;
 }

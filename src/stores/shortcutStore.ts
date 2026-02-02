@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PaymentMethod } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAuthStore } from './authStore';
 
 export interface QuickShortcut {
     id: string;
@@ -111,7 +112,9 @@ export const useShortcutStore = create<ShortcutState>()(
             },
 
             fetchShortcuts: async (parkId) => {
-                if (!isSupabaseConfigured()) return;
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (!isSupabaseConfigured() || isDemo) return;
+
                 let query = supabase!.from('shortcuts').select('*');
                 if (parkId) query = query.eq('park_id', parkId);
                 const { data, error } = await query.order('sort_order');
@@ -120,10 +123,11 @@ export const useShortcutStore = create<ShortcutState>()(
             },
 
             addShortcut: async (data) => {
+                const isDemo = useAuthStore.getState().user?.is_demo;
                 const parkShortcuts = get().shortcuts.filter(s => s.park_id === data.park_id);
                 const maxOrder = Math.max(...parkShortcuts.map(s => s.sort_order), 0);
 
-                if (isSupabaseConfigured()) {
+                if (isSupabaseConfigured() && !isDemo) {
                     const { data: newShortcut, error } = await supabase!
                         .from('shortcuts')
                         .insert([{ ...data, sort_order: maxOrder + 1 }])
@@ -144,7 +148,8 @@ export const useShortcutStore = create<ShortcutState>()(
             },
 
             updateShortcut: async (shortcutId, updates) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('shortcuts')
                         .update(updates)
@@ -159,7 +164,8 @@ export const useShortcutStore = create<ShortcutState>()(
             },
 
             deleteShortcut: async (shortcutId) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!.from('shortcuts').delete().eq('id', shortcutId);
                     if (error) throw error;
                 }
@@ -169,11 +175,12 @@ export const useShortcutStore = create<ShortcutState>()(
             },
 
             toggleShortcut: async (shortcutId) => {
+                const isDemo = useAuthStore.getState().user?.is_demo;
                 const shortcut = get().shortcuts.find(s => s.id === shortcutId);
                 if (!shortcut) return;
                 const newStatus = !shortcut.is_active;
 
-                if (isSupabaseConfigured()) {
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('shortcuts')
                         .update({ is_active: newStatus })
@@ -188,7 +195,8 @@ export const useShortcutStore = create<ShortcutState>()(
             },
 
             reorderShortcuts: async (parkId, shortcutIds) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     // Update each shortcut order in Supabase
                     const updates = shortcutIds.map((id, index) =>
                         supabase!.from('shortcuts').update({ sort_order: index }).eq('id', id)

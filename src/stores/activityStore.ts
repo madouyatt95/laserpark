@@ -5,6 +5,7 @@ import { useStockStore } from './stockStore';
 import { useCategoryStore } from './categoryStore';
 import { format, isToday, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAuthStore } from './authStore';
 
 // Generate demo activities
 const generateDemoActivities = (parkId: string, userId: string): Activity[] => {
@@ -138,7 +139,8 @@ export const useActivityStore = create<ActivityState>()(
             },
 
             fetchActivities: async (parkId, date) => {
-                if (!isSupabaseConfigured()) return;
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (!isSupabaseConfigured() || isDemo) return;
 
                 set({ isLoading: true });
                 let query = supabase!.from('activities').select('*').eq('park_id', parkId);
@@ -161,7 +163,8 @@ export const useActivityStore = create<ActivityState>()(
             },
 
             addActivity: async (parkId, userId, data) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const newActivityData = {
                         park_id: parkId,
                         category_id: data.category_id,
@@ -224,7 +227,8 @@ export const useActivityStore = create<ActivityState>()(
 
             cancelActivity: async (activityId, reason, userId) => {
                 const now = new Date();
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('activities')
                         .update({
@@ -254,7 +258,8 @@ export const useActivityStore = create<ActivityState>()(
             },
 
             deleteActivity: async (activityId) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('activities')
                         .delete()
@@ -268,7 +273,8 @@ export const useActivityStore = create<ActivityState>()(
             },
 
             updateActivity: async (activityId, updates) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('activities')
                         .update(updates)

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { StockItem, StockMovement, StockMovementType } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAuthStore } from './authStore';
 
 // Initial stock items
 const createInitialStock = (parkId: string): StockItem[] => [
@@ -100,7 +101,8 @@ export const useStockStore = create<StockState>()(
             },
 
             fetchStock: async (parkId) => {
-                if (!isSupabaseConfigured()) return;
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (!isSupabaseConfigured() || isDemo) return;
                 set({ isLoading: true });
                 let query = supabase!.from('stock_items').select('*');
                 if (parkId) query = query.eq('park_id', parkId);
@@ -114,7 +116,8 @@ export const useStockStore = create<StockState>()(
             },
 
             addStockItem: async (itemData) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { data, error } = await supabase!
                         .from('stock_items')
                         .insert([itemData])
@@ -134,7 +137,8 @@ export const useStockStore = create<StockState>()(
             },
 
             updateStockItem: async (itemId, updates) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('stock_items')
                         .update(updates)
@@ -151,7 +155,8 @@ export const useStockStore = create<StockState>()(
             },
 
             deleteStockItem: async (itemId) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!.from('stock_items').delete().eq('id', itemId);
                     if (error) throw error;
                 }
@@ -161,7 +166,8 @@ export const useStockStore = create<StockState>()(
             },
 
             fetchMovements: async (stockItemId) => {
-                if (!isSupabaseConfigured()) return;
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (!isSupabaseConfigured() || isDemo) return;
                 const { data, error } = await supabase!
                     .from('stock_movements')
                     .select('*')
@@ -184,7 +190,8 @@ export const useStockStore = create<StockState>()(
                     created_by: userId,
                 };
 
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { data: movement, error } = await supabase!
                         .from('stock_movements')
                         .insert([movementData])
@@ -238,7 +245,8 @@ export const useStockStore = create<StockState>()(
                     created_by: userId,
                 };
 
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { data: movement, error } = await supabase!
                         .from('stock_movements')
                         .insert([movementData])
@@ -292,7 +300,8 @@ export const useStockStore = create<StockState>()(
                     created_by: userId,
                 };
 
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { data: movement, error } = await supabase!
                         .from('stock_movements')
                         .insert([movementData])

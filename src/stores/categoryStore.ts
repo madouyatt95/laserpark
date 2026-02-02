@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Category, CategoryType } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAuthStore } from './authStore';
 
 // Initial demo categories
 const createInitialCategories = (parkId: string): Category[] => [
@@ -222,7 +223,8 @@ export const useCategoryStore = create<CategoryState>()(
             },
 
             fetchCategories: async (parkId) => {
-                if (!isSupabaseConfigured()) return;
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (!isSupabaseConfigured() || isDemo) return;
 
                 set({ isLoading: true });
                 let query = supabase!.from('categories').select('*');
@@ -240,6 +242,7 @@ export const useCategoryStore = create<CategoryState>()(
             },
 
             addCategory: async (categoryData) => {
+                const isDemo = useAuthStore.getState().user?.is_demo;
                 const maxOrder = Math.max(
                     ...get().categories
                         .filter(c => c.park_id === categoryData.park_id && c.type === categoryData.type)
@@ -247,7 +250,7 @@ export const useCategoryStore = create<CategoryState>()(
                     0
                 );
 
-                if (isSupabaseConfigured()) {
+                if (isSupabaseConfigured() && !isDemo) {
                     const { data, error } = await supabase!
                         .from('categories')
                         .insert([{ ...categoryData, sort_order: maxOrder + 1 }])
@@ -272,7 +275,8 @@ export const useCategoryStore = create<CategoryState>()(
             },
 
             updateCategory: async (categoryId, updates) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('categories')
                         .update(updates)
@@ -291,11 +295,12 @@ export const useCategoryStore = create<CategoryState>()(
             },
 
             toggleCategoryStatus: async (categoryId) => {
+                const isDemo = useAuthStore.getState().user?.is_demo;
                 const category = get().categories.find(c => c.id === categoryId);
                 if (!category) return;
                 const newStatus = !category.is_active;
 
-                if (isSupabaseConfigured()) {
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('categories')
                         .update({ is_active: newStatus })
@@ -314,7 +319,8 @@ export const useCategoryStore = create<CategoryState>()(
             },
 
             deleteCategory: async (categoryId) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('categories')
                         .delete()

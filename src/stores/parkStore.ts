@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Park } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAuthStore } from './authStore';
 
 // Initial demo parks
 const INITIAL_PARKS: Park[] = [
@@ -76,7 +77,8 @@ export const useParkStore = create<ParkState>()(
             },
 
             fetchParks: async () => {
-                if (!isSupabaseConfigured()) return;
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (!isSupabaseConfigured() || isDemo) return;
 
                 set({ isLoading: true });
                 const { data, error } = await supabase!
@@ -98,7 +100,8 @@ export const useParkStore = create<ParkState>()(
             },
 
             addPark: async (parkData) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { data, error } = await supabase!
                         .from('parks')
                         .insert([parkData])
@@ -123,7 +126,8 @@ export const useParkStore = create<ParkState>()(
             },
 
             updatePark: async (parkId, updates) => {
-                if (isSupabaseConfigured()) {
+                const isDemo = useAuthStore.getState().user?.is_demo;
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('parks')
                         .update(updates)
@@ -142,12 +146,13 @@ export const useParkStore = create<ParkState>()(
             },
 
             toggleParkStatus: async (parkId) => {
+                const isDemo = useAuthStore.getState().user?.is_demo;
                 const park = get().parks.find(p => p.id === parkId);
                 if (!park) return;
 
                 const newStatus = !park.is_active;
 
-                if (isSupabaseConfigured()) {
+                if (isSupabaseConfigured() && !isDemo) {
                     const { error } = await supabase!
                         .from('parks')
                         .update({ is_active: newStatus })

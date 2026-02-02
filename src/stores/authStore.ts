@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
 
                 if (validatedUser) {
                     set({
-                        user: validatedUser,
+                        user: { ...validatedUser, is_demo: true },
                         isAuthenticated: true,
                         isLoading: false
                     });
