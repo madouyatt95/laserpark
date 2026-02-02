@@ -41,7 +41,7 @@
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding-bottom: env(safe-area-inset-bottom, var(--spacing-2));
+    padding-bottom: env(safe-area-inset-bottom, var(--spacing-1));
     z-index: 1000;
 }
 
@@ -51,12 +51,11 @@
     align-items: center;
     justify-content: center;
     gap: var(--spacing-1);
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: var(--spacing-1) var(--spacing-2);
     color: var(--color-text-tertiary);
     text-decoration: none;
     transition: all var(--transition-fast);
     border-radius: var(--radius-lg);
-    min-width: 60px;
 }
 
 .bottom-nav-item span {
@@ -179,13 +178,13 @@
 }
 
 .list-item-icon {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     flex-shrink: 0;
 }
 
