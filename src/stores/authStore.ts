@@ -37,9 +37,7 @@ export const useAuthStore = create<AuthState>()(
                             password,
                         });
 
-                        if (error) throw error;
-
-                        if (data.user) {
+                        if (!error && data.user) {
                             // Get profile from profiles table
                             const { data: profile, error: profileError } = await supabase!
                                 .from('profiles')
@@ -47,21 +45,18 @@ export const useAuthStore = create<AuthState>()(
                                 .eq('id', data.user.id)
                                 .single();
 
-                            if (profileError) throw profileError;
-
-                            set({
-                                user: profile as User,
-                                isAuthenticated: true,
-                                isLoading: false
-                            });
-                            return true;
+                            if (!profileError && profile) {
+                                set({
+                                    user: profile as User,
+                                    isAuthenticated: true,
+                                    isLoading: false
+                                });
+                                return true;
+                            }
                         }
                     } catch (err: any) {
-                        set({
-                            error: err.message || 'Erreur lors de la connexion',
-                            isLoading: false
-                        });
-                        return false;
+                        console.warn('Supabase login attempt failed:', err.message);
+                        // Fall through to demo mode
                     }
                 }
 
