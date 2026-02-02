@@ -88,7 +88,9 @@ const ParametresPage: React.FC = () => {
     return (
         <div className="page">
             <div className="page-header">
-                <h1 className="page-title">Paramètres</h1>
+                <h1 className="page-title">
+                    <span className="text-gradient">Paramètres</span>
+                </h1>
                 <p className="page-subtitle">Configuration</p>
             </div>
 

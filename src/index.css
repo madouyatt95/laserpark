@@ -9,18 +9,28 @@
   padding: 0;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  height: 100vh;
+html,
+body,
+#root {
+  height: 100%;
   height: 100dvh;
-  background-color: #0a0a0f;
-  color: #f8fafc;
+  width: 100%;
   overflow: hidden;
-  /* Important for PWA feel */
+  position: fixed;
+  /* Lock everything to prevent iOS overscroll bounce */
+  top: 0;
+  left: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
-  width: 100%;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
 }

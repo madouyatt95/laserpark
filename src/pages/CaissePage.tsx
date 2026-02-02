@@ -94,13 +94,14 @@ const CaissePage: React.FC = () => {
     return (
         <div className="page">
             <div className="page-header">
-                <h1 className="page-title">Caisse Live</h1>
+                <h1 className="page-title">
+                    <span className="text-gradient">Caisse Live</span>
+                </h1>
                 <p className="page-subtitle">
                     {new Date().toLocaleDateString('fr-FR', {
                         weekday: 'long',
                         day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
+                        month: 'long'
                     })}
                 </p>
             </div>

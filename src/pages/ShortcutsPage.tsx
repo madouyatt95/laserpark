@@ -116,7 +116,9 @@ const ShortcutsPage: React.FC = () => {
                     <ArrowLeft size={20} />
                 </button>
                 <div>
-                    <h1 className="page-title">Raccourcis rapides</h1>
+                    <h1 className="page-title">
+                        <span className="text-gradient">Raccourcis rapides</span>
+                    </h1>
                     <p className="page-subtitle">{park?.name}</p>
                 </div>
             </div>

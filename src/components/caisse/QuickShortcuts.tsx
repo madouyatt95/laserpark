@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Zap, Settings } from 'lucide-react';
-import { useCategoryStore } from '../../stores/categoryStore';
 import { useActivityStore } from '../../stores/activityStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useShortcutStore } from '../../stores/shortcutStore';
@@ -24,6 +23,7 @@ const QuickShortcuts: React.FC<QuickShortcutsProps> = ({ parkId, onSaleComplete 
     const [activeShortcut, setActiveShortcut] = useState<string | null>(null);
     const [showQuantityPicker, setShowQuantityPicker] = useState(false);
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isLongPress = useRef(false);
     const quantityPickerRef = useRef<HTMLDivElement>(null);
 
     const shortcuts = getShortcutsByPark(parkId);
@@ -41,7 +41,7 @@ const QuickShortcuts: React.FC<QuickShortcutsProps> = ({ parkId, onSaleComplete 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleQuickSale = (shortcut: typeof shortcuts[0], quantity: number = 1) => {
+    const handleQuickSale = (shortcut: any, quantity: number = 1) => {
         if (!user) return;
 
         addActivity(parkId, user.id, {
@@ -58,19 +58,27 @@ const QuickShortcuts: React.FC<QuickShortcutsProps> = ({ parkId, onSaleComplete 
     };
 
     const handleTouchStart = (shortcutId: string) => {
+        isLongPress.current = false;
         longPressTimer.current = setTimeout(() => {
+            isLongPress.current = true;
             setActiveShortcut(shortcutId);
             setShowQuantityPicker(true);
-        }, 500); // 500ms for long press
+        }, 500);
     };
 
-    const handleTouchEnd = (shortcut: typeof shortcuts[0]) => {
+    const handleTouchEnd = (shortcut: any, e: React.TouchEvent | React.MouseEvent) => {
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
         }
-        // If quantity picker is not shown, it was a tap
-        if (!showQuantityPicker) {
+
+        if (!isLongPress.current && !showQuantityPicker) {
             handleQuickSale(shortcut, 1);
+        }
+
+        // Prevent default only for touch to avoid ghost clicks, but let mouse events through for desktop
+        if (e.type === 'touchend') {
+            // No preventDefault here to keep the UI responsive, 
+            // but we use the isLongPress ref to decide if it's a click or not.
         }
     };
 
@@ -84,6 +92,15 @@ const QuickShortcuts: React.FC<QuickShortcutsProps> = ({ parkId, onSaleComplete 
         const shortcut = shortcuts.find(s => s.id === activeShortcut);
         if (shortcut) {
             handleQuickSale(shortcut, quantity);
+        }
+    };
+
+    // Use a single click handler for desktop, and touch handlers for mobile
+    // to avoid event duplication and conflicts.
+    const handleClick = (shortcut: any) => {
+        // Only trigger if not a long press (handled by touch)
+        if (!showQuantityPicker) {
+            handleQuickSale(shortcut, 1);
         }
     };
 
@@ -117,15 +134,16 @@ const QuickShortcuts: React.FC<QuickShortcutsProps> = ({ parkId, onSaleComplete 
                         <div key={shortcut.id} className="shortcut-wrapper">
                             <button
                                 className={`quick-shortcut-btn ${activeShortcut === shortcut.id ? 'active' : ''}`}
-                                onMouseDown={() => handleTouchStart(shortcut.id)}
-                                onMouseUp={() => handleTouchEnd(shortcut)}
-                                onMouseLeave={handleTouchCancel}
                                 onTouchStart={() => handleTouchStart(shortcut.id)}
-                                onTouchEnd={(e) => {
-                                    e.preventDefault();
-                                    handleTouchEnd(shortcut);
-                                }}
+                                onTouchEnd={(e) => handleTouchEnd(shortcut, e)}
                                 onTouchCancel={handleTouchCancel}
+                                onClick={() => {
+                                    // If touch events worked, onClick might be redundant on mobile
+                                    // but essential on desktop.
+                                    if (!isLongPress.current) {
+                                        handleClick(shortcut);
+                                    }
+                                }}
                             >
                                 <span className="shortcut-icon">{shortcut.icon}</span>
                                 <span className="shortcut-name">{shortcut.name}</span>
@@ -141,7 +159,10 @@ const QuickShortcuts: React.FC<QuickShortcutsProps> = ({ parkId, onSaleComplete 
                                             <button
                                                 key={qty}
                                                 className="quantity-option"
-                                                onClick={() => handleQuantitySelect(qty)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleQuantitySelect(qty);
+                                                }}
                                             >
                                                 ×{qty}
                                             </button>

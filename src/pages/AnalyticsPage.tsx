@@ -112,7 +112,9 @@ const AnalyticsPage: React.FC = () => {
     return (
         <div className="page">
             <div className="page-header">
-                <h1 className="page-title">Analytiques</h1>
+                <h1 className="page-title">
+                    <span className="text-gradient">Analytiques</span>
+                </h1>
                 <p className="page-subtitle">{park?.name}</p>
             </div>
 

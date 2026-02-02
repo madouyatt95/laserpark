@@ -103,7 +103,9 @@ const StocksPage: React.FC = () => {
     return (
         <div className="page">
             <div className="page-header">
-                <h1 className="page-title">Stocks</h1>
+                <h1 className="page-title">
+                    <span className="text-gradient">Stocks</span>
+                </h1>
                 {canManageStock ? (
                     <button className="btn btn-sm btn-primary" onClick={() => setShowAddItem(true)}>
                         <Plus size={16} />
