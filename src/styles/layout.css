@@ -410,7 +410,7 @@ input,
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-    z-index: 900;
+    z-index: 1050;
 }
 
 @media (max-width: 480px) {

@@ -607,7 +607,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 99;
+    z-index: 1100;
     animation: fadeIn 0.2s ease;
 }
 
@@ -618,12 +618,12 @@
 
 .fab-menu {
     position: fixed;
-    bottom: calc(var(--nav-height) + 80px);
+    bottom: calc(var(--bottom-nav-height) + 80px + env(safe-area-inset-bottom, 0px));
     right: var(--spacing-4);
     display: flex;
     flex-direction: column-reverse;
     gap: var(--spacing-3);
-    z-index: 100;
+    z-index: 1200;
     opacity: 0;
     visibility: hidden;
     transform: translateY(20px);
