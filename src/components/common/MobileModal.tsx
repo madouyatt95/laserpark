@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, ReactNode } from 'react';
 import { X } from 'lucide-react';
-import '../styles/mobile-modal.css';
+import '../../styles/mobile-modal.css';
 
 interface MobileModalProps {
     isOpen: boolean;
