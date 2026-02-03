@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Zap, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Zap, Eye, EyeOff, AlertCircle, UserPlus } from 'lucide-react';
 import '../styles/login.css';
 
 const LoginPage: React.FC = () => {
@@ -92,6 +93,14 @@ const LoginPage: React.FC = () => {
                             'Se connecter'
                         )}
                     </button>
+
+                    <div className="signup-footer">
+                        <span>Pas encore de compte ?</span>
+                        <Link to="/signup" className="signup-link">
+                            <UserPlus size={16} />
+                            S'inscrire
+                        </Link>
+                    </div>
                 </form>
 
                 <div className="login-demo">

@@ -19,6 +19,7 @@ import AuditPage from './pages/AuditPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ShortcutsPage from './pages/ShortcutsPage';
 import CategoriesPage from './pages/CategoriesPage';
+import SignupPage from './pages/SignupPage';
 
 // Styles
 import './styles/variables.css';
@@ -56,6 +57,14 @@ const App: React.FC = () => {
           path="/login"
           element={
             isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
+          }
+        />
+
+        {/* Signup Route */}
+        <Route
+          path="/signup"
+          element={
+            isAuthenticated ? <Navigate to="/" replace /> : <SignupPage />
           }
         />
 
