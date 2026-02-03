@@ -203,13 +203,15 @@ const ParametresPage: React.FC = () => {
     };
 
     const handleClearCaisseData = () => {
-        // Clear activities and expenses from localStorage
-        const activityStore = useActivityStore.getState();
-        const expenseStore = useExpenseStore.getState();
+        if (!confirm('⚠️ Effacer toutes les transactions locales ?\n\nCette action supprimera uniquement les données de caisse stockées localement (activités et dépenses).\n\nLes données dans Supabase ne seront PAS affectées.')) {
+            return;
+        }
 
-        // Clear local storage for these stores
+        // Only clear activities and expenses from localStorage
+        // DO NOT clear parks, categories, auth, or other critical stores
         localStorage.removeItem('laserpark-activities');
         localStorage.removeItem('laserpark-expenses');
+        localStorage.removeItem('laserpark-closures');
 
         // Reload the page to reset stores
         window.location.reload();
