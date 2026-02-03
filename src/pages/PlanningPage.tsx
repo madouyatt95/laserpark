@@ -13,6 +13,7 @@ import { usePlanningStore, TeamMember, Shift } from '../stores/planningStore';
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import '../styles/planning.css';
+import MobileModal from '../components/common/MobileModal';
 
 const PlanningPage: React.FC = () => {
     const { selectedParkId } = useParkStore();
@@ -178,67 +179,65 @@ const PlanningPage: React.FC = () => {
             </div>
 
             {/* Add Member Modal */}
-            {showAddMember && (
-                <div className="modal-overlay" onClick={() => setShowAddMember(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">Nouveau membre</h2>
-                        </div>
-                        <div className="modal-body">
-                            <input
-                                type="text"
-                                className="input"
-                                placeholder="Nom complet"
-                                value={newMemberName}
-                                onChange={(e) => setNewMemberName(e.target.value)}
-                                autoFocus
-                            />
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowAddMember(false)}>
-                                Annuler
-                            </button>
-                            <button className="btn btn-primary" onClick={handleAddMember}>
-                                Ajouter
-                            </button>
-                        </div>
-                    </div>
+            <MobileModal
+                isOpen={showAddMember}
+                onClose={() => setShowAddMember(false)}
+                title="Nouveau membre"
+                size="sm"
+            >
+                <div className="form-group">
+                    <input
+                        type="text"
+                        className="input"
+                        placeholder="Nom complet"
+                        value={newMemberName}
+                        onChange={(e) => setNewMemberName(e.target.value)}
+                        autoFocus
+                    />
                 </div>
-            )}
+                <div className="form-actions">
+                    <button className="btn btn-secondary" onClick={() => setShowAddMember(false)}>
+                        Annuler
+                    </button>
+                    <button className="btn btn-primary" onClick={handleAddMember}>
+                        Ajouter
+                    </button>
+                </div>
+            </MobileModal>
 
             {/* Add Shift Modal */}
-            {showAddShift && selectedDay && (
-                <div className="modal-overlay" onClick={() => setShowAddShift(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">Ajouter un shift</h2>
-                        </div>
-                        <div className="modal-body">
-                            <p className="shift-date-label">
-                                {format(selectedDay, 'EEEE d MMMM', { locale: fr })}
-                            </p>
-                            <div className="shift-time-inputs">
-                                <div className="time-input-group">
-                                    <label className="input-label">Début</label>
-                                    <input
-                                        type="time"
-                                        className="input"
-                                        value={shiftStart}
-                                        onChange={(e) => setShiftStart(e.target.value)}
-                                    />
-                                </div>
-                                <div className="time-input-group">
-                                    <label className="input-label">Fin</label>
-                                    <input
-                                        type="time"
-                                        className="input"
-                                        value={shiftEnd}
-                                        onChange={(e) => setShiftEnd(e.target.value)}
-                                    />
-                                </div>
+            <MobileModal
+                isOpen={showAddShift && selectedDay !== null}
+                onClose={() => setShowAddShift(false)}
+                title="Ajouter un shift"
+                size="sm"
+            >
+                {selectedDay && (
+                    <>
+                        <p className="shift-date-label">
+                            {format(selectedDay, 'EEEE d MMMM', { locale: fr })}
+                        </p>
+                        <div className="shift-time-inputs">
+                            <div className="time-input-group">
+                                <label className="input-label">Début</label>
+                                <input
+                                    type="time"
+                                    className="input"
+                                    value={shiftStart}
+                                    onChange={(e) => setShiftStart(e.target.value)}
+                                />
+                            </div>
+                            <div className="time-input-group">
+                                <label className="input-label">Fin</label>
+                                <input
+                                    type="time"
+                                    className="input"
+                                    value={shiftEnd}
+                                    onChange={(e) => setShiftEnd(e.target.value)}
+                                />
                             </div>
                         </div>
-                        <div className="modal-footer">
+                        <div className="form-actions">
                             <button className="btn btn-secondary" onClick={() => setShowAddShift(false)}>
                                 Annuler
                             </button>
@@ -246,9 +245,9 @@ const PlanningPage: React.FC = () => {
                                 Ajouter
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </MobileModal>
         </div>
     );
 };

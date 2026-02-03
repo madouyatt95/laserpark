@@ -19,6 +19,7 @@ import { useCategoryStore } from '../stores/categoryStore';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { format } from 'date-fns';
 import '../styles/closure.css';
+import MobileModal from '../components/common/MobileModal';
 
 const ClosurePage: React.FC = () => {
     const { user } = useAuthStore();
@@ -289,44 +290,40 @@ const ClosurePage: React.FC = () => {
             </div>
 
             {/* Confirmation Modal */}
-            {showConfirmation && (
-                <div className="modal-overlay" onClick={() => setShowConfirmation(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">Confirmer la clôture</h2>
-                        </div>
-                        <div className="modal-body">
-                            <p className="confirmation-text">
-                                Vous êtes sur le point de créer la clôture pour le <strong>{formatDate(new Date(selectedDate))}</strong>.
-                            </p>
-                            <div className="confirmation-summary">
-                                <div className="confirmation-row">
-                                    <span>Recettes:</span>
-                                    <span className="positive">{formatCurrency(totalRevenue)}</span>
-                                </div>
-                                <div className="confirmation-row">
-                                    <span>Dépenses:</span>
-                                    <span className="negative">{formatCurrency(totalExpenses)}</span>
-                                </div>
-                                <div className="confirmation-row total">
-                                    <span>Résultat:</span>
-                                    <span className={netResult >= 0 ? 'positive' : 'negative'}>
-                                        {formatCurrency(netResult)}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowConfirmation(false)}>
-                                Annuler
-                            </button>
-                            <button className="btn btn-primary" onClick={handleCreateClosure}>
-                                Confirmer
-                            </button>
-                        </div>
+            <MobileModal
+                isOpen={showConfirmation}
+                onClose={() => setShowConfirmation(false)}
+                title="Confirmer la clôture"
+                size="md"
+            >
+                <p className="confirmation-text">
+                    Vous êtes sur le point de créer la clôture pour le <strong>{formatDate(new Date(selectedDate))}</strong>.
+                </p>
+                <div className="confirmation-summary">
+                    <div className="confirmation-row">
+                        <span>Recettes:</span>
+                        <span className="positive">{formatCurrency(totalRevenue)}</span>
+                    </div>
+                    <div className="confirmation-row">
+                        <span>Dépenses:</span>
+                        <span className="negative">{formatCurrency(totalExpenses)}</span>
+                    </div>
+                    <div className="confirmation-row total">
+                        <span>Résultat:</span>
+                        <span className={netResult >= 0 ? 'positive' : 'negative'}>
+                            {formatCurrency(netResult)}
+                        </span>
                     </div>
                 </div>
-            )}
+                <div className="form-actions">
+                    <button className="btn btn-secondary" onClick={() => setShowConfirmation(false)}>
+                        Annuler
+                    </button>
+                    <button className="btn btn-primary" onClick={handleCreateClosure}>
+                        Confirmer
+                    </button>
+                </div>
+            </MobileModal>
         </div>
     );
 };

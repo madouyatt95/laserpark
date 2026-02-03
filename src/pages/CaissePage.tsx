@@ -10,6 +10,7 @@ import { Activity } from '../types';
 import ActivityForm from '../components/caisse/ActivityForm';
 import QuickShortcuts from '../components/caisse/QuickShortcuts';
 import '../styles/caisse.css';
+import MobileModal from '../components/common/MobileModal';
 
 const CaissePage: React.FC = () => {
     const [showActivityForm, setShowActivityForm] = useState(false);
@@ -235,16 +236,15 @@ const CaissePage: React.FC = () => {
             />
 
             {/* Receipt Confirmation Modal */}
-            {showReceiptConfirm && lastActivity && (
-                <div className="modal-overlay" onClick={() => setShowReceiptConfirm(false)}>
-                    <div className="modal-content modal-sm" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">✅ Vente enregistrée</h2>
-                            <button className="modal-close" onClick={() => setShowReceiptConfirm(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body text-center">
+            <MobileModal
+                isOpen={showReceiptConfirm && lastActivity !== null}
+                onClose={() => setShowReceiptConfirm(false)}
+                title="✅ Vente enregistrée"
+                size="sm"
+            >
+                {lastActivity && (
+                    <>
+                        <div className="text-center">
                             <p className="receipt-confirm-amount">
                                 {formatCurrency(lastActivity.amount)}
                             </p>
@@ -252,7 +252,7 @@ const CaissePage: React.FC = () => {
                                 Voulez-vous imprimer le ticket de caisse ?
                             </p>
                         </div>
-                        <div className="modal-footer">
+                        <div className="form-actions">
                             <button
                                 className="btn btn-secondary"
                                 onClick={() => setShowReceiptConfirm(false)}
@@ -270,42 +270,39 @@ const CaissePage: React.FC = () => {
                                 Imprimer
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </MobileModal>
 
             {/* Cancel Confirmation Modal */}
-            {showCancelModal && selectedActivity && (
-                <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">⚠️ Annuler cette vente ?</h2>
-                            <button className="modal-close" onClick={() => setShowCancelModal(false)}>
-                                <X size={20} />
-                            </button>
+            <MobileModal
+                isOpen={showCancelModal && selectedActivity !== null}
+                onClose={() => setShowCancelModal(false)}
+                title="⚠️ Annuler cette vente ?"
+                size="md"
+            >
+                {selectedActivity && (
+                    <>
+                        <div className="cancel-preview">
+                            <span className="cancel-preview-amount">
+                                {formatCurrency(selectedActivity.amount)}
+                            </span>
+                            <span className="cancel-preview-category">
+                                {getCategory(selectedActivity.category_id)?.name}
+                            </span>
                         </div>
-                        <div className="modal-body">
-                            <div className="cancel-preview">
-                                <span className="cancel-preview-amount">
-                                    {formatCurrency(selectedActivity.amount)}
-                                </span>
-                                <span className="cancel-preview-category">
-                                    {getCategory(selectedActivity.category_id)?.name}
-                                </span>
-                            </div>
-                            <div className="form-group">
-                                <label className="input-label">Raison de l'annulation *</label>
-                                <textarea
-                                    className="input"
-                                    rows={3}
-                                    placeholder="Ex: Erreur de saisie, client annulé..."
-                                    value={cancelReason}
-                                    onChange={(e) => setCancelReason(e.target.value)}
-                                    required
-                                />
-                            </div>
+                        <div className="form-group">
+                            <label className="input-label">Raison de l'annulation *</label>
+                            <textarea
+                                className="input"
+                                rows={3}
+                                placeholder="Ex: Erreur de saisie, client annulé..."
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                                required
+                            />
                         </div>
-                        <div className="modal-footer">
+                        <div className="form-actions">
                             <button
                                 className="btn btn-secondary"
                                 onClick={() => setShowCancelModal(false)}
@@ -321,9 +318,9 @@ const CaissePage: React.FC = () => {
                                 Confirmer l'annulation
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </MobileModal>
         </div>
     );
 };

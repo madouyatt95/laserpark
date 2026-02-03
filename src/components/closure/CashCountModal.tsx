@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Calculator, Check, AlertTriangle } from 'lucide-react';
+import { Calculator, Check, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../utils/helpers';
+import MobileModal from '../common/MobileModal';
 import '../../styles/closure.css';
 
 // XOF denominations
@@ -18,12 +19,14 @@ const DENOMINATIONS = [
 ];
 
 interface CashCountModalProps {
+    isOpen: boolean;
     expectedAmount: number;
     onConfirm: (countedAmount: number) => void;
     onClose: () => void;
 }
 
 const CashCountModal: React.FC<CashCountModalProps> = ({
+    isOpen,
     expectedAmount,
     onConfirm,
     onClose,
@@ -50,103 +53,94 @@ const CashCountModal: React.FC<CashCountModalProps> = ({
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content modal-lg" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h2 className="modal-title">
-                        <Calculator size={20} />
-                        Comptage de caisse
-                    </h2>
-                    <button className="modal-close" onClick={onClose}>
-                        <X size={20} />
-                    </button>
-                </div>
-
-                <div className="modal-body">
-                    {/* Expected Amount */}
-                    <div className="cash-count-summary">
-                        <div className="cash-count-row">
-                            <span>Espèces attendues (théorique)</span>
-                            <span className="cash-expected">{formatCurrency(expectedAmount)}</span>
-                        </div>
-                    </div>
-
-                    {/* Denomination Grid */}
-                    <div className="denomination-grid">
-                        {DENOMINATIONS.map(denom => (
-                            <div key={denom.value} className={`denomination-row ${denom.type}`}>
-                                <span className="denomination-label">{denom.label}</span>
-                                <div className="denomination-input">
-                                    <button
-                                        className="denomination-btn"
-                                        onClick={() => handleCountChange(denom.value, (counts[denom.value] || 0) - 1)}
-                                    >
-                                        −
-                                    </button>
-                                    <input
-                                        type="number"
-                                        className="denomination-count"
-                                        value={counts[denom.value] || ''}
-                                        onChange={e => handleCountChange(denom.value, parseInt(e.target.value) || 0)}
-                                        placeholder="0"
-                                        min="0"
-                                    />
-                                    <button
-                                        className="denomination-btn"
-                                        onClick={() => handleCountChange(denom.value, (counts[denom.value] || 0) + 1)}
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                                <span className="denomination-subtotal">
-                                    {formatCurrency((counts[denom.value] || 0) * denom.value)}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Result Summary */}
-                    <div className="cash-count-result">
-                        <div className="cash-count-row">
-                            <span className="cash-count-label">Total compté</span>
-                            <span className="cash-counted">{formatCurrency(totalCounted)}</span>
-                        </div>
-                        <div className={`cash-count-row ${hasDiscrepancy ? 'discrepancy' : 'match'}`}>
-                            <span className="cash-count-label">
-                                {hasDiscrepancy ? (
-                                    <>
-                                        <AlertTriangle size={16} />
-                                        Écart
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check size={16} />
-                                        Caisse OK
-                                    </>
-                                )}
-                            </span>
-                            <span className={`cash-difference ${difference > 0 ? 'positive' : difference < 0 ? 'negative' : ''}`}>
-                                {difference >= 0 ? '+' : ''}{formatCurrency(difference)}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="modal-footer">
-                    <button className="btn btn-secondary" onClick={onClose}>
-                        Annuler
-                    </button>
-                    <button
-                        className="btn btn-primary"
-                        onClick={handleConfirm}
-                        disabled={totalCounted === 0}
-                    >
-                        <Check size={16} />
-                        Valider le comptage
-                    </button>
+        <MobileModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Comptage de caisse"
+            size="lg"
+        >
+            {/* Expected Amount */}
+            <div className="cash-count-summary">
+                <div className="cash-count-row">
+                    <span>Espèces attendues (théorique)</span>
+                    <span className="cash-expected">{formatCurrency(expectedAmount)}</span>
                 </div>
             </div>
-        </div>
+
+            {/* Denomination Grid */}
+            <div className="denomination-grid">
+                {DENOMINATIONS.map(denom => (
+                    <div key={denom.value} className={`denomination-row ${denom.type}`}>
+                        <span className="denomination-label">{denom.label}</span>
+                        <div className="denomination-input">
+                            <button
+                                className="denomination-btn"
+                                onClick={() => handleCountChange(denom.value, (counts[denom.value] || 0) - 1)}
+                            >
+                                −
+                            </button>
+                            <input
+                                type="number"
+                                className="denomination-count"
+                                value={counts[denom.value] || ''}
+                                onChange={e => handleCountChange(denom.value, parseInt(e.target.value) || 0)}
+                                placeholder="0"
+                                min="0"
+                            />
+                            <button
+                                className="denomination-btn"
+                                onClick={() => handleCountChange(denom.value, (counts[denom.value] || 0) + 1)}
+                            >
+                                +
+                            </button>
+                        </div>
+                        <span className="denomination-subtotal">
+                            {formatCurrency((counts[denom.value] || 0) * denom.value)}
+                        </span>
+                    </div>
+                ))}
+            </div>
+
+            {/* Result Summary */}
+            <div className="cash-count-result">
+                <div className="cash-count-row">
+                    <span className="cash-count-label">Total compté</span>
+                    <span className="cash-counted">{formatCurrency(totalCounted)}</span>
+                </div>
+                <div className={`cash-count-row ${hasDiscrepancy ? 'discrepancy' : 'match'}`}>
+                    <span className="cash-count-label">
+                        {hasDiscrepancy ? (
+                            <>
+                                <AlertTriangle size={16} />
+                                Écart
+                            </>
+                        ) : (
+                            <>
+                                <Check size={16} />
+                                Caisse OK
+                            </>
+                        )}
+                    </span>
+                    <span className={`cash-difference ${difference > 0 ? 'positive' : difference < 0 ? 'negative' : ''}`}>
+                        {difference >= 0 ? '+' : ''}{formatCurrency(difference)}
+                    </span>
+                </div>
+            </div>
+
+            <div className="form-actions">
+                <button className="btn btn-secondary" onClick={onClose}>
+                    Annuler
+                </button>
+                <button
+                    className="btn btn-primary"
+                    onClick={handleConfirm}
+                    disabled={totalCounted === 0}
+                >
+                    <Check size={16} />
+                    Valider le comptage
+                </button>
+            </div>
+        </MobileModal>
     );
 };
 
