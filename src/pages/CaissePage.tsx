@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
-import { Plus, TrendingUp, CreditCard, Banknote, Smartphone, Printer, X, Ban } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, TrendingUp, CreditCard, Banknote, Smartphone, Printer, Ban, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useParkStore } from '../stores/parkStore';
 import { useActivityStore } from '../stores/activityStore';
 import { useCategoryStore } from '../stores/categoryStore';
 import { useAuthStore } from '../stores/authStore';
-import { formatCurrency, formatTime } from '../utils/helpers';
-import { printReceipt, generateReceipt } from '../services/ReceiptService';
+import { formatCurrency, formatTime, formatDate } from '../utils/helpers';
+import { printReceipt } from '../services/ReceiptService';
 import { Activity } from '../types';
 import ActivityForm from '../components/caisse/ActivityForm';
 import QuickShortcuts from '../components/caisse/QuickShortcuts';
 import '../styles/caisse.css';
 import MobileModal from '../components/common/MobileModal';
+import { format, addDays, isToday, isSameDay, startOfDay } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 const CaissePage: React.FC = () => {
     const [showActivityForm, setShowActivityForm] = useState(false);
@@ -19,38 +21,40 @@ const CaissePage: React.FC = () => {
     const [cancelReason, setCancelReason] = useState('');
     const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
     const [lastActivity, setLastActivity] = useState<Activity | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     const { user } = useAuthStore();
     const { selectedParkId, getSelectedPark } = useParkStore();
-    const { getTodayActivities, getTodayRevenue, getRevenueByPayment, cancelActivity } = useActivityStore();
+    const { getActivitiesByDate, getTodayActivities, getRevenueByPayment, cancelActivity } = useActivityStore();
     const { getCategory } = useCategoryStore();
 
     const selectedPark = getSelectedPark();
     const parkId = selectedParkId || '';
 
-    const todayActivities = getTodayActivities(parkId);
-    const activeActivities = todayActivities.filter(a => a.status !== 'cancelled');
-    const todayRevenue = activeActivities.reduce((sum, a) => sum + a.amount, 0);
-    const revenueByPayment = getRevenueByPayment(parkId);
+    // Get activities for selected date
+    const dateActivities = useMemo(() => {
+        return getActivitiesByDate(parkId, selectedDate);
+    }, [parkId, selectedDate, getActivitiesByDate]);
+
+    const activeActivities = dateActivities.filter(a => a.status !== 'cancelled');
+    const dateRevenue = activeActivities.reduce((sum, a) => sum + a.amount, 0);
+    const revenueByPayment = getRevenueByPayment(parkId, selectedDate);
+
+    const isViewingToday = isToday(selectedDate);
+
+    const navigateDate = (direction: 'prev' | 'next') => {
+        setSelectedDate(prev => addDays(prev, direction === 'next' ? 1 : -1));
+    };
+
+    const goToToday = () => {
+        setSelectedDate(new Date());
+    };
 
     const handlePrintReceipt = (activity: Activity) => {
         const park = getSelectedPark();
         const category = getCategory(activity.category_id);
         if (park && category) {
             printReceipt({
-                activity,
-                park,
-                category,
-                cashierName: user?.full_name || 'Caissier',
-            });
-        }
-    };
-
-    const handleDownloadReceipt = (activity: Activity) => {
-        const park = getSelectedPark();
-        const category = getCategory(activity.category_id);
-        if (park && category) {
-            generateReceipt({
                 activity,
                 park,
                 category,
@@ -99,24 +103,52 @@ const CaissePage: React.FC = () => {
                     <span className="text-gradient">Caisse Live</span>
                 </h1>
                 <p className="page-subtitle">
-                    {new Date().toLocaleDateString('fr-FR', {
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'long'
-                    })}
+                    {selectedPark?.name}
                 </p>
             </div>
 
-            {/* Quick Shortcuts */}
-            <QuickShortcuts parkId={parkId} onSaleComplete={handleQuickSaleComplete} />
+            {/* Date Navigation */}
+            <div className="date-navigation">
+                <button className="btn btn-icon" onClick={() => navigateDate('prev')}>
+                    <ChevronLeft size={20} />
+                </button>
+                <div className="date-display">
+                    <Calendar size={16} />
+                    <span className="date-label">
+                        {isViewingToday
+                            ? "Aujourd'hui"
+                            : format(selectedDate, 'EEEE d MMMM', { locale: fr })}
+                    </span>
+                    {!isViewingToday && (
+                        <button className="btn btn-xs btn-secondary" onClick={goToToday}>
+                            Aujourd'hui
+                        </button>
+                    )}
+                </div>
+                <button
+                    className="btn btn-icon"
+                    onClick={() => navigateDate('next')}
+                    disabled={isViewingToday}
+                >
+                    <ChevronRight size={20} />
+                </button>
+            </div>
+
+            {/* Quick Shortcuts - only show when viewing today */}
+            {isViewingToday && (
+                <QuickShortcuts parkId={parkId} onSaleComplete={handleQuickSaleComplete} />
+            )}
+
             <div className="caisse-summary">
                 <div className="summary-card total">
                     <div className="summary-card-icon">
                         <TrendingUp size={24} />
                     </div>
                     <div className="summary-card-content">
-                        <span className="summary-card-label">Total du jour</span>
-                        <span className="summary-card-value">{formatCurrency(todayRevenue)}</span>
+                        <span className="summary-card-label">
+                            {isViewingToday ? 'Total du jour' : 'Total'}
+                        </span>
+                        <span className="summary-card-value">{formatCurrency(dateRevenue)}</span>
                     </div>
                 </div>
 
@@ -144,21 +176,25 @@ const CaissePage: React.FC = () => {
             {/* Activities List */}
             <section className="section">
                 <div className="section-header">
-                    <h2 className="section-title">Activités du jour</h2>
+                    <h2 className="section-title">
+                        {isViewingToday ? 'Activités du jour' : `Activités du ${format(selectedDate, 'd MMM', { locale: fr })}`}
+                    </h2>
                     <span className="badge badge-primary">{activeActivities.length}</span>
                 </div>
 
-                {todayActivities.length === 0 ? (
+                {dateActivities.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state-icon">🎯</div>
                         <h3 className="empty-state-title">Aucune activité</h3>
                         <p className="empty-state-text">
-                            Cliquez sur le bouton + pour enregistrer votre première vente
+                            {isViewingToday
+                                ? "Cliquez sur le bouton + pour enregistrer votre première vente"
+                                : "Aucune vente enregistrée ce jour"}
                         </p>
                     </div>
                 ) : (
                     <div className="activities-list">
-                        {todayActivities.map((activity) => {
+                        {dateActivities.map((activity) => {
                             const category = getCategory(activity.category_id);
                             const isCancelled = activity.status === 'cancelled';
                             return (
@@ -192,7 +228,7 @@ const CaissePage: React.FC = () => {
                                             {formatCurrency(activity.amount)}
                                         </span>
                                     </div>
-                                    {!isCancelled && (
+                                    {!isCancelled && isViewingToday && (
                                         <div className="activity-actions">
                                             <button
                                                 className="btn-icon-sm"
@@ -217,14 +253,16 @@ const CaissePage: React.FC = () => {
                 )}
             </section>
 
-            {/* FAB Button */}
-            <button
-                className="fab"
-                onClick={() => setShowActivityForm(true)}
-                aria-label="Nouvelle activité"
-            >
-                <Plus size={28} />
-            </button>
+            {/* FAB Button - only show when viewing today */}
+            {isViewingToday && (
+                <button
+                    className="fab"
+                    onClick={() => setShowActivityForm(true)}
+                    aria-label="Nouvelle activité"
+                >
+                    <Plus size={28} />
+                </button>
+            )}
 
             {/* Activity Form Modal */}
             <ActivityForm

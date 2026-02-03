@@ -18,6 +18,7 @@ import PlanningPage from './pages/PlanningPage';
 import AuditPage from './pages/AuditPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ShortcutsPage from './pages/ShortcutsPage';
+import CategoriesPage from './pages/CategoriesPage';
 
 // Styles
 import './styles/variables.css';
@@ -76,6 +77,7 @@ const App: React.FC = () => {
           <Route path="/audit" element={<AuditPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/raccourcis" element={<ShortcutsPage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
         </Route>
 
         {/* Fallback */}

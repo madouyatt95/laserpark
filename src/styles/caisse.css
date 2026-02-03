@@ -2,6 +2,36 @@
    Caisse Page Styles
    ============================================ */
 
+/* --- Date Navigation --- */
+.date-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-3) var(--spacing-4);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-4);
+}
+
+.date-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    color: var(--color-text-primary);
+}
+
+.date-label {
+    font-weight: var(--font-weight-medium);
+    text-transform: capitalize;
+}
+
+.btn-xs {
+    padding: var(--spacing-1) var(--spacing-2);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-sm);
+}
+
 /* --- Summary Cards --- */
 .caisse-summary {
     margin-bottom: var(--spacing-6);

@@ -13,7 +13,8 @@ import {
     UserPlus,
     Users,
     Mail,
-    Key
+    Key,
+    Tag
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useParkStore } from '../stores/parkStore';
@@ -48,6 +49,7 @@ const ParametresPage: React.FC = () => {
     const quickLinks = [
         { id: 'cloture', icon: FileCheck, label: 'Clôture', path: '/cloture' },
         { id: 'planning', icon: Calendar, label: 'Planning', path: '/planning' },
+        { id: 'categories', icon: Tag, label: 'Catégories', path: '/categories' },
         { id: 'analytics', icon: BarChart3, label: 'Analytics', path: '/analytics' },
         { id: 'audit', icon: History, label: 'Audit', path: '/audit' },
     ];

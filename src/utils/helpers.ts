@@ -1,8 +1,8 @@
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-// Format currency (XOF)
-export const formatCurrency = (amount: number, currency: string = 'XOF'): string => {
+// Format currency (CFA)
+export const formatCurrency = (amount: number, currency: string = 'CFA'): string => {
     return new Intl.NumberFormat('fr-FR', {
         style: 'decimal',
         minimumFractionDigits: 0,
