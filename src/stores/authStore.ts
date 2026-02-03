@@ -52,24 +52,59 @@ export const useAuthStore = create<AuthState>()(
                             password,
                         });
 
-                        if (!error && data.user) {
-                            const { data: profile, error: profileError } = await supabase!
+                        if (error) {
+                            console.error('Supabase auth error:', error.message);
+                            set({
+                                error: error.message === 'Invalid login credentials'
+                                    ? 'Email ou mot de passe incorrect'
+                                    : error.message,
+                                isLoading: false
+                            });
+                            return false;
+                        }
+
+                        if (data.user) {
+                            // Try to get existing profile
+                            let { data: profile, error: profileError } = await supabase!
                                 .from('profiles')
                                 .select('*')
                                 .eq('id', data.user.id)
-                                .single();
+                                .maybeSingle();
 
-                            if (!profileError && profile) {
+                            // If no profile exists, create one
+                            if (!profile && !profileError) {
+                                const { data: newProfile, error: createError } = await supabase!
+                                    .from('profiles')
+                                    .insert({
+                                        id: data.user.id,
+                                        email: data.user.email,
+                                        full_name: data.user.user_metadata?.full_name || email.split('@')[0],
+                                        role: 'staff',
+                                        is_active: true,
+                                    })
+                                    .select()
+                                    .single();
+
+                                if (createError) {
+                                    console.error('Error creating profile:', createError);
+                                } else {
+                                    profile = newProfile;
+                                }
+                            }
+
+                            if (profile) {
                                 set({
                                     user: profile as User,
                                     isAuthenticated: true,
                                     isLoading: false
                                 });
                                 return true;
+                            } else {
+                                console.error('Profile error:', profileError);
                             }
                         }
                     } catch (err: any) {
-                        console.warn('Supabase login failed:', err.message);
+                        console.error('Supabase login failed:', err.message);
                     }
                 }
 
