@@ -283,13 +283,12 @@ input,
     backdrop-filter: blur(8px);
     display: flex;
     align-items: flex-start;
-    /* Aligned to top for mobile keyboard space */
     justify-content: center;
     padding: var(--spacing-4);
-    padding-top: 10dvh;
-    /* Safety margin from top */
+    padding-top: 5dvh;
     z-index: 2000;
     height: 100dvh;
+    overflow-y: auto;
     animation: fadeIn var(--transition-fast);
 }
 
@@ -299,13 +298,15 @@ input,
     border-radius: var(--radius-xl);
     width: 100%;
     max-width: 500px;
-    max-height: 80dvh;
-    /* Leave room for keyboard and top margin */
+    max-height: 90dvh;
+    min-height: 200px;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     box-shadow: var(--shadow-xl);
     animation: scaleIn var(--transition-bounce);
     position: relative;
+    margin-bottom: var(--spacing-4);
 }
 
 .modal-header {
@@ -314,12 +315,16 @@ input,
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-shrink: 0;
 }
 
 .modal-body {
     padding: var(--spacing-4);
     overflow-y: auto;
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 .modal-footer {
@@ -329,6 +334,7 @@ input,
     align-items: center;
     justify-content: flex-end;
     gap: var(--spacing-3);
+    flex-shrink: 0;
 }
 
 /* --- UI Elements --- */
@@ -394,17 +400,18 @@ input,
         font-size: var(--font-size-xl);
     }
 }
+
 /* --- Mobile Modal Adjustments --- */
 @media (max-width: 480px) {
     .modal-overlay {
         padding: var(--spacing-2);
         padding-top: 5dvh;
     }
-    
+
     .modal-content {
         max-height: 85dvh;
     }
-    
+
     .modal-body {
         padding: var(--spacing-3);
     }
