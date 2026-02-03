@@ -160,3 +160,59 @@
     align-items: center;
     gap: var(--spacing-2);
 }
+
+/* Mobile compact styles */
+@media (max-width: 640px) {
+    .period-selector {
+        gap: var(--spacing-1);
+        margin-bottom: var(--spacing-4);
+    }
+
+    .period-btn {
+        padding: var(--spacing-2);
+        font-size: var(--font-size-xs);
+    }
+
+    .comparison-cards {
+        gap: var(--spacing-3);
+        margin-bottom: var(--spacing-4);
+    }
+
+    .comparison-card {
+        padding: var(--spacing-3);
+    }
+
+    .comparison-label {
+        font-size: var(--font-size-xs);
+    }
+
+    .comparison-value {
+        font-size: var(--font-size-base);
+    }
+
+    .comparison-previous {
+        font-size: 10px;
+    }
+
+    .chart-container,
+    .heatmap-container {
+        padding: var(--spacing-3);
+    }
+
+    .heatmap-grid {
+        gap: var(--spacing-1);
+        margin-bottom: var(--spacing-3);
+    }
+
+    .heatmap-hour {
+        font-size: 8px;
+    }
+
+    .heatmap-count {
+        font-size: 7px;
+    }
+
+    .section-title {
+        font-size: var(--font-size-sm);
+    }
+}

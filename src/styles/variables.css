@@ -123,7 +123,7 @@
 
   /* --- Layout --- */
   --header-height: 56px;
-  --bottom-nav-height: 56px;
+  --bottom-nav-height: 48px;
   --sidebar-width: 260px;
   --content-max-width: 1200px;
 }
