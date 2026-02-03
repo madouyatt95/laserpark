@@ -42,10 +42,7 @@ const createInitialTeam = (parkId: string): TeamMember[] => [
     },
 ];
 
-const INITIAL_TEAM: TeamMember[] = [
-    ...createInitialTeam('park_angre'),
-    ...createInitialTeam('park_zone4'),
-];
+const INITIAL_TEAM: TeamMember[] = [];
 
 interface PlanningState {
     members: TeamMember[];
@@ -69,7 +66,7 @@ interface PlanningState {
 export const usePlanningStore = create<PlanningState>()(
     persist(
         (set, get) => ({
-            members: INITIAL_TEAM,
+            members: [],
             shifts: [],
 
             getMembersByPark: (parkId) => {

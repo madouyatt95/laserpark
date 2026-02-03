@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Zap, Eye, EyeOff, AlertCircle, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, UserPlus } from 'lucide-react';
 import '../styles/login.css';
 
 const LoginPage: React.FC = () => {
@@ -15,12 +15,6 @@ const LoginPage: React.FC = () => {
         e.preventDefault();
         clearError();
         await login(email, password);
-    };
-
-    const handleDemoLogin = async (demoEmail: string) => {
-        setEmail(demoEmail);
-        setPassword(demoEmail.includes('admin') ? 'admin123' : 'manager123');
-        await login(demoEmail, demoEmail.includes('admin') ? 'admin123' : 'manager123');
     };
 
     return (
@@ -102,36 +96,6 @@ const LoginPage: React.FC = () => {
                         </Link>
                     </div>
                 </form>
-
-                <div className="login-demo">
-                    <p className="login-demo-title">Comptes de démonstration</p>
-                    <div className="login-demo-buttons">
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => handleDemoLogin('admin@laserpark.ci')}
-                            disabled={isLoading}
-                        >
-                            👑 Super Admin
-                        </button>
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => handleDemoLogin('manager.angre@laserpark.ci')}
-                            disabled={isLoading}
-                        >
-                            🎯 Manager Angré
-                        </button>
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => handleDemoLogin('manager.zone4@laserpark.ci')}
-                            disabled={isLoading}
-                        >
-                            🎯 Manager Zone 4
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     );

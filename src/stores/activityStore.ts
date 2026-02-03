@@ -3,49 +3,9 @@ import { persist } from 'zustand/middleware';
 import { Activity, PaymentMethod, ActivityFormData, ActivityStatus } from '../types';
 import { useStockStore } from './stockStore';
 import { useCategoryStore } from './categoryStore';
-import { format, isToday, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { isToday, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuthStore } from './authStore';
-
-// Generate demo activities
-const generateDemoActivities = (parkId: string, userId: string): Activity[] => {
-    const today = new Date();
-    const activities: Activity[] = [];
-
-    // Some demo activities for today
-    const demoData = [
-        { categoryId: `cat_laser20_${parkId}`, amount: 5000, quantity: 2, payment: 'cash' as PaymentMethod },
-        { categoryId: `cat_laser40_${parkId}`, amount: 8000, quantity: 1, payment: 'wave' as PaymentMethod },
-        { categoryId: `cat_drink_${parkId}`, amount: 1500, quantity: 3, payment: 'cash' as PaymentMethod },
-        { categoryId: `cat_birthday_${parkId}`, amount: 50000, quantity: 1, payment: 'orange_money' as PaymentMethod },
-        { categoryId: `cat_snack_${parkId}`, amount: 2000, quantity: 4, payment: 'cash' as PaymentMethod },
-    ];
-
-    demoData.forEach((data, index) => {
-        const activityDate = new Date(today);
-        activityDate.setHours(10 + index, Math.floor(Math.random() * 60), 0, 0);
-
-        activities.push({
-            id: `act_demo_${parkId}_${index}`,
-            park_id: parkId,
-            category_id: data.categoryId,
-            amount: data.amount,
-            quantity: data.quantity,
-            payment_method: data.payment,
-            created_by: userId,
-            activity_date: activityDate.toISOString(),
-            created_at: activityDate.toISOString(),
-            status: 'active' as ActivityStatus,
-        });
-    });
-
-    return activities;
-};
-
-const INITIAL_ACTIVITIES: Activity[] = [
-    ...generateDemoActivities('park_angre', 'usr_manager_angre'),
-    ...generateDemoActivities('park_zone4', 'usr_manager_zone4'),
-];
 
 interface ActivityState {
     activities: Activity[];
@@ -70,7 +30,7 @@ interface ActivityState {
 export const useActivityStore = create<ActivityState>()(
     persist(
         (set, get) => ({
-            activities: INITIAL_ACTIVITIES,
+            activities: [],
             isLoading: false,
 
             getActivitiesByPark: (parkId: string) => {
@@ -139,8 +99,7 @@ export const useActivityStore = create<ActivityState>()(
             },
 
             fetchActivities: async (parkId, date) => {
-                const isDemo = useAuthStore.getState().user?.is_demo;
-                if (!isSupabaseConfigured() || isDemo) return;
+                if (!isSupabaseConfigured()) return;
 
                 set({ isLoading: true });
                 let query = supabase!.from('activities').select('*').eq('park_id', parkId);
@@ -163,8 +122,7 @@ export const useActivityStore = create<ActivityState>()(
             },
 
             addActivity: async (parkId, userId, data) => {
-                const isDemo = useAuthStore.getState().user?.is_demo;
-                if (isSupabaseConfigured() && !isDemo) {
+                if (isSupabaseConfigured()) {
                     const newActivityData = {
                         park_id: parkId,
                         category_id: data.category_id,
@@ -186,7 +144,7 @@ export const useActivityStore = create<ActivityState>()(
 
                     set(state => ({ activities: [newActivity as Activity, ...state.activities] }));
 
-                    // Check impacts stock (async background)
+                    // Check impacts stock
                     const categoryStore = useCategoryStore.getState();
                     const category = categoryStore.getCategory(data.category_id);
                     if (category?.impacts_stock && category.stock_item_id) {
@@ -197,7 +155,7 @@ export const useActivityStore = create<ActivityState>()(
                     return newActivity as Activity;
                 }
 
-                // Fallback Local
+                // Fallback Local (should rarely happen with real auth)
                 const now = new Date();
                 const newActivity: Activity = {
                     id: `act_${Date.now()}`,
@@ -214,21 +172,12 @@ export const useActivityStore = create<ActivityState>()(
                 };
 
                 set(state => ({ activities: [newActivity, ...state.activities] }));
-
-                const categoryStore = useCategoryStore.getState();
-                const category = categoryStore.getCategory(data.category_id);
-                if (category?.impacts_stock && category.stock_item_id) {
-                    const stockStore = useStockStore.getState();
-                    stockStore.decrementStock(category.stock_item_id, data.quantity, newActivity.id, userId);
-                }
-
                 return newActivity;
             },
 
             cancelActivity: async (activityId, reason, userId) => {
                 const now = new Date();
-                const isDemo = useAuthStore.getState().user?.is_demo;
-                if (isSupabaseConfigured() && !isDemo) {
+                if (isSupabaseConfigured()) {
                     const { error } = await supabase!
                         .from('activities')
                         .update({
@@ -258,8 +207,7 @@ export const useActivityStore = create<ActivityState>()(
             },
 
             deleteActivity: async (activityId) => {
-                const isDemo = useAuthStore.getState().user?.is_demo;
-                if (isSupabaseConfigured() && !isDemo) {
+                if (isSupabaseConfigured()) {
                     const { error } = await supabase!
                         .from('activities')
                         .delete()
@@ -273,8 +221,7 @@ export const useActivityStore = create<ActivityState>()(
             },
 
             updateActivity: async (activityId, updates) => {
-                const isDemo = useAuthStore.getState().user?.is_demo;
-                if (isSupabaseConfigured() && !isDemo) {
+                if (isSupabaseConfigured()) {
                     const { error } = await supabase!
                         .from('activities')
                         .update(updates)

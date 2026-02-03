@@ -26,11 +26,12 @@ import '../styles/parametres.css';
 
 const ParametresPage: React.FC = () => {
     const navigate = useNavigate();
-    const { user, logout } = useAuthStore();
+    const { user, logout, canManagePlanning, canAccessClosure } = useAuthStore();
     const { parks, toggleParkStatus } = useParkStore();
     const { getAllUsers, addUser, toggleUserStatus } = useUserStore();
 
     const isSuperAdmin = user?.role === 'super_admin';
+    const isManager = user?.role === 'manager';
     const [activeSection, setActiveSection] = useState<string | null>(null);
     const [showPinLock, setShowPinLock] = useState(false);
     const [showAddUser, setShowAddUser] = useState(false);
@@ -46,13 +47,21 @@ const ParametresPage: React.FC = () => {
 
     const allUsers = getAllUsers();
 
-    const quickLinks = [
-        { id: 'cloture', icon: FileCheck, label: 'Clôture', path: '/cloture' },
-        { id: 'planning', icon: Calendar, label: 'Planning', path: '/planning' },
-        { id: 'categories', icon: Tag, label: 'Catégories', path: '/categories' },
-        { id: 'analytics', icon: BarChart3, label: 'Analytics', path: '/analytics' },
-        { id: 'audit', icon: History, label: 'Audit', path: '/audit' },
+    // Filter quick links based on permissions
+    const allQuickLinks = [
+        { id: 'cloture', icon: FileCheck, label: 'Clôture', path: '/cloture', requiresClosure: true },
+        { id: 'planning', icon: Calendar, label: 'Planning', path: '/planning', requiresPlanning: false },
+        { id: 'categories', icon: Tag, label: 'Catégories', path: '/categories', requiresClosure: false },
+        { id: 'analytics', icon: BarChart3, label: 'Analytics', path: '/analytics', requiresClosure: false },
+        { id: 'audit', icon: History, label: 'Audit', path: '/audit', requiresClosure: true },
     ];
+
+    // Staff can see planning (read-only view will be handled in PlanningPage)
+    // Staff cannot see closure, analytics, audit
+    const quickLinks = allQuickLinks.filter(link => {
+        if (link.requiresClosure && !canAccessClosure()) return false;
+        return true;
+    });
 
     const handleAddUser = () => {
         if (!newUserForm.full_name || !newUserForm.email || !newUserForm.password) {

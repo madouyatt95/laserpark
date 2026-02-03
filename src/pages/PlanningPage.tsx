@@ -6,9 +6,11 @@ import {
     Users,
     Clock,
     Edit2,
-    Trash2
+    Trash2,
+    Eye
 } from 'lucide-react';
 import { useParkStore } from '../stores/parkStore';
+import { useAuthStore } from '../stores/authStore';
 import { usePlanningStore, TeamMember, Shift } from '../stores/planningStore';
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,6 +19,8 @@ import MobileModal from '../components/common/MobileModal';
 
 const PlanningPage: React.FC = () => {
     const { selectedParkId } = useParkStore();
+    const { canManagePlanning } = useAuthStore();
+    const canManage = canManagePlanning();
     const {
         getMembersByPark,
         addMember,
@@ -175,14 +179,19 @@ const PlanningPage: React.FC = () => {
     return (
         <div className="page">
             <div className="page-header">
-                <h1 className="page-title">Planning Équipes</h1>
-                <button
-                    className="btn btn-sm btn-primary"
-                    onClick={openAddMemberModal}
-                >
-                    <Plus size={16} />
-                    Ajouter
-                </button>
+                <h1 className="page-title">
+                    Planning Équipes
+                    {!canManage && <span className="badge badge-info" style={{ marginLeft: '8px', fontSize: '12px' }}>Lecture seule</span>}
+                </h1>
+                {canManage && (
+                    <button
+                        className="btn btn-sm btn-primary"
+                        onClick={openAddMemberModal}
+                    >
+                        <Plus size={16} />
+                        Ajouter
+                    </button>
+                )}
             </div>
 
             {/* Week Navigation */}
@@ -229,8 +238,8 @@ const PlanningPage: React.FC = () => {
                     members.map(member => (
                         <div key={member.id} className="planning-row">
                             <div
-                                className="planning-cell member-cell clickable"
-                                onClick={() => openEditMemberModal(member)}
+                                className={`planning-cell member-cell ${canManage ? 'clickable' : ''}`}
+                                onClick={() => canManage && openEditMemberModal(member)}
                             >
                                 <span className="member-name">{member.name}</span>
                                 <span className="member-role">{member.role === 'manager' ? 'Manager' : 'Staff'}</span>
@@ -240,8 +249,8 @@ const PlanningPage: React.FC = () => {
                                 return (
                                     <div
                                         key={day.toISOString()}
-                                        className={`planning-cell shift-cell ${shift ? 'has-shift' : ''} ${isSameDay(day, new Date()) ? 'today' : ''}`}
-                                        onClick={() => handleCellClick(member.id, day)}
+                                        className={`planning-cell shift-cell ${shift ? 'has-shift' : ''} ${isSameDay(day, new Date()) ? 'today' : ''} ${canManage ? 'clickable' : ''}`}
+                                        onClick={() => canManage && handleCellClick(member.id, day)}
                                     >
                                         {shift && (
                                             <div className="shift-badge">

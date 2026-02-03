@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Lock,
     CheckCircle,
@@ -22,7 +23,27 @@ import '../styles/closure.css';
 import MobileModal from '../components/common/MobileModal';
 
 const ClosurePage: React.FC = () => {
-    const { user } = useAuthStore();
+    const { user, canAccessClosure } = useAuthStore();
+    const navigate = useNavigate();
+
+    // Check permissions
+    if (!canAccessClosure()) {
+        return (
+            <div className="page">
+                <div className="page-header">
+                    <h1 className="page-title">Accès Refusé</h1>
+                </div>
+                <div className="glass-panel text-center" style={{ padding: 'var(--spacing-8)' }}>
+                    <Lock size={48} color="var(--color-danger)" style={{ marginBottom: 'var(--spacing-4)' }} />
+                    <p>Vous n'avez pas les permissions nécessaires pour accéder à la clôture journalière.</p>
+                    <button className="btn btn-primary" onClick={() => navigate('/')} style={{ marginTop: 'var(--spacing-4)' }}>
+                        Retour au Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     const { selectedParkId, getSelectedPark } = useParkStore();
     const { getActivitiesByDate, getRevenueByPayment, getRevenueByCategory } = useActivityStore();
     const { getExpensesByDate } = useExpenseStore();

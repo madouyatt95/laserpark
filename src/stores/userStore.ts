@@ -2,47 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, UserRole } from '../types';
 
-// Demo users store - separate from auth for management
+// Users store - for local user management
 interface UserWithPassword extends User {
     password: string;
 }
-
-// Initial demo users
-const INITIAL_USERS: UserWithPassword[] = [
-    {
-        id: 'usr_super_admin',
-        email: 'admin@laserpark.ci',
-        password: 'admin123',
-        full_name: 'Super Admin',
-        role: 'super_admin',
-        park_id: null,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-    },
-    {
-        id: 'usr_manager_angre',
-        email: 'manager.angre@laserpark.ci',
-        password: 'manager123',
-        full_name: 'Manager Angré',
-        role: 'manager',
-        park_id: 'park_angre',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-    },
-    {
-        id: 'usr_manager_zone4',
-        email: 'manager.zone4@laserpark.ci',
-        password: 'manager123',
-        full_name: 'Manager Zone 4',
-        role: 'manager',
-        park_id: 'park_zone4',
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-    },
-];
 
 interface UserState {
     users: UserWithPassword[];
@@ -69,7 +32,7 @@ interface UserState {
 export const useUserStore = create<UserState>()(
     persist(
         (set, get) => ({
-            users: INITIAL_USERS,
+            users: [], // No demo users - all users come from Supabase
 
             getAllUsers: () => {
                 return get().users.map(({ password, ...user }) => user);
@@ -134,14 +97,9 @@ export const useUserStore = create<UserState>()(
                 }));
             },
 
-            validateCredentials: (email, password) => {
-                const user = get().users.find(
-                    u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-                );
-                if (user && user.is_active) {
-                    const { password: _, ...userWithoutPassword } = user;
-                    return userWithoutPassword;
-                }
+            validateCredentials: (_email, _password) => {
+                // Demo credentials no longer supported
+                // All authentication goes through Supabase
                 return null;
             },
         }),

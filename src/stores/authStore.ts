@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, UserRole } from '../types';
-import { useUserStore } from './userStore';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthState {
@@ -16,6 +15,8 @@ interface AuthState {
     clearError: () => void;
     hasPermission: (requiredRole: UserRole | UserRole[]) => boolean;
     canAccessPark: (parkId: string) => boolean;
+    canManagePlanning: () => boolean;
+    canAccessClosure: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -29,86 +30,77 @@ export const useAuthStore = create<AuthState>()(
             login: async (email: string, password: string) => {
                 set({ isLoading: true, error: null });
 
-                // Priority 1: Check for demo credentials FIRST
-                const userStore = useUserStore.getState();
-                const demoUser = userStore.validateCredentials(email, password);
-
-                if (demoUser) {
-                    // Demo user found - use local mode, skip Supabase entirely
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                // Only Supabase authentication - no demo mode
+                if (!isSupabaseConfigured()) {
                     set({
-                        user: { ...demoUser, is_demo: true },
-                        isAuthenticated: true,
+                        error: 'Supabase non configuré. Contactez l\'administrateur.',
                         isLoading: false
                     });
-                    return true;
+                    return false;
                 }
 
-                // Priority 2: Try Supabase for non-demo users
-                if (isSupabaseConfigured()) {
-                    try {
-                        const { data, error } = await supabase!.auth.signInWithPassword({
-                            email,
-                            password,
-                        });
+                try {
+                    const { data, error } = await supabase!.auth.signInWithPassword({
+                        email,
+                        password,
+                    });
 
-                        if (error) {
-                            console.error('Supabase auth error:', error.message);
+                    if (error) {
+                        console.error('Supabase auth error:', error.message);
+                        set({
+                            error: error.message === 'Invalid login credentials'
+                                ? 'Email ou mot de passe incorrect'
+                                : error.message,
+                            isLoading: false
+                        });
+                        return false;
+                    }
+
+                    if (data.user) {
+                        // Try to get existing profile
+                        let { data: profile, error: profileError } = await supabase!
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', data.user.id)
+                            .maybeSingle();
+
+                        // If no profile exists, create one
+                        if (!profile && !profileError) {
+                            const { data: newProfile, error: createError } = await supabase!
+                                .from('profiles')
+                                .insert({
+                                    id: data.user.id,
+                                    email: data.user.email,
+                                    full_name: data.user.user_metadata?.full_name || email.split('@')[0],
+                                    role: 'staff',
+                                    is_active: true,
+                                })
+                                .select()
+                                .single();
+
+                            if (createError) {
+                                console.error('Error creating profile:', createError);
+                            } else {
+                                profile = newProfile;
+                            }
+                        }
+
+                        if (profile) {
                             set({
-                                error: error.message === 'Invalid login credentials'
-                                    ? 'Email ou mot de passe incorrect'
-                                    : error.message,
+                                user: profile as User,
+                                isAuthenticated: true,
                                 isLoading: false
                             });
-                            return false;
+                            return true;
+                        } else {
+                            console.error('Profile error:', profileError);
                         }
-
-                        if (data.user) {
-                            // Try to get existing profile
-                            let { data: profile, error: profileError } = await supabase!
-                                .from('profiles')
-                                .select('*')
-                                .eq('id', data.user.id)
-                                .maybeSingle();
-
-                            // If no profile exists, create one
-                            if (!profile && !profileError) {
-                                const { data: newProfile, error: createError } = await supabase!
-                                    .from('profiles')
-                                    .insert({
-                                        id: data.user.id,
-                                        email: data.user.email,
-                                        full_name: data.user.user_metadata?.full_name || email.split('@')[0],
-                                        role: 'staff',
-                                        is_active: true,
-                                    })
-                                    .select()
-                                    .single();
-
-                                if (createError) {
-                                    console.error('Error creating profile:', createError);
-                                } else {
-                                    profile = newProfile;
-                                }
-                            }
-
-                            if (profile) {
-                                set({
-                                    user: profile as User,
-                                    isAuthenticated: true,
-                                    isLoading: false
-                                });
-                                return true;
-                            } else {
-                                console.error('Profile error:', profileError);
-                            }
-                        }
-                    } catch (err: any) {
-                        console.error('Supabase login failed:', err.message);
                     }
+                } catch (err: any) {
+                    console.error('Supabase login failed:', err.message);
                 }
 
-                // No valid user found anywhere
+                // No valid user found
                 set({
                     error: 'Email ou mot de passe incorrect',
                     isLoading: false
@@ -148,6 +140,20 @@ export const useAuthStore = create<AuthState>()(
 
                 // Manager/Staff can only access their assigned park
                 return user.park_id === parkId;
+            },
+
+            // Staff can view planning but not edit
+            canManagePlanning: () => {
+                const { user } = get();
+                if (!user) return false;
+                return user.role === 'super_admin' || user.role === 'manager';
+            },
+
+            // Only managers and super_admin can access closure
+            canAccessClosure: () => {
+                const { user } = get();
+                if (!user) return false;
+                return user.role === 'super_admin' || user.role === 'manager';
             },
         }),
         {
