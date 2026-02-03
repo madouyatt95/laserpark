@@ -257,8 +257,12 @@
     border-radius: var(--radius-2xl);
     width: 100%;
     max-width: 480px;
-    max-height: 90vh;
-    overflow-y: auto;
+    max-height: 85vh;
+    max-height: 85dvh;
+    /* Dynamic viewport height for iOS */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     animation: slideUp var(--transition-normal);
 }
 
@@ -277,6 +281,18 @@
 
 .modal-body {
     padding: var(--spacing-5);
+    padding-bottom: var(--spacing-6);
+    overflow-y: scroll;
+    /* Force scroll */
+    overflow-x: hidden;
+    flex: 1 1 auto;
+    min-height: 0;
+    /* Critical for flexbox scroll */
+    -webkit-overflow-scrolling: touch;
+    /* iOS smooth scroll */
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    /* Allow vertical touch */
 }
 
 .modal-footer {
