@@ -86,6 +86,24 @@ export const useAuthStore = create<AuthState>()(
                         }
 
                         if (profile) {
+                            // Check if user is approved (active AND has a role)
+                            if (!profile.is_active) {
+                                set({
+                                    error: 'Votre compte n\'est pas encore activé. Contactez un administrateur.',
+                                    isLoading: false
+                                });
+                                await supabase!.auth.signOut();
+                                return false;
+                            }
+                            if (!profile.role) {
+                                set({
+                                    error: 'Aucun rôle attribué à votre compte. Contactez un administrateur.',
+                                    isLoading: false
+                                });
+                                await supabase!.auth.signOut();
+                                return false;
+                            }
+
                             set({
                                 user: profile as User,
                                 isAuthenticated: true,
