@@ -421,3 +421,124 @@
 .btn-danger:hover {
     background: #dc2626;
 }
+
+/* Mobile compact styles */
+@media (max-width: 640px) {
+    .caisse-summary {
+        margin-bottom: var(--spacing-4);
+    }
+
+    .summary-card {
+        padding: var(--spacing-3);
+        gap: var(--spacing-3);
+    }
+
+    .summary-card.total {
+        margin-bottom: var(--spacing-3);
+    }
+
+    .summary-card-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .summary-card-label {
+        font-size: var(--font-size-xs);
+    }
+
+    .summary-card-value {
+        font-size: var(--font-size-base);
+    }
+
+    .summary-cards-row {
+        gap: var(--spacing-2);
+    }
+
+    .summary-cards-row .summary-card {
+        padding: var(--spacing-3);
+        gap: var(--spacing-1);
+    }
+
+    .summary-cards-row .summary-card-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .summary-cards-row .summary-card-value {
+        font-size: var(--font-size-sm);
+    }
+
+    .summary-cards-row .summary-card-label {
+        font-size: 10px;
+    }
+
+    .activities-list {
+        gap: var(--spacing-2);
+    }
+
+    .activity-item {
+        padding: var(--spacing-3);
+        gap: var(--spacing-2);
+    }
+
+    .activity-icon {
+        width: 32px;
+        height: 32px;
+        font-size: var(--font-size-base);
+    }
+
+    .activity-name {
+        font-size: var(--font-size-sm);
+    }
+
+    .activity-meta {
+        font-size: var(--font-size-xs);
+    }
+
+    .activity-amount {
+        font-size: var(--font-size-sm);
+    }
+
+    .payment-badge {
+        font-size: 10px;
+        padding: 2px var(--spacing-1);
+    }
+
+    .form-section {
+        margin-bottom: var(--spacing-4);
+    }
+
+    .category-chip {
+        padding: var(--spacing-2);
+        gap: var(--spacing-1);
+    }
+
+    .category-icon {
+        font-size: var(--font-size-base);
+    }
+
+    .category-name {
+        font-size: var(--font-size-xs);
+    }
+
+    .input-lg {
+        font-size: var(--font-size-xl);
+        padding: var(--spacing-3);
+    }
+
+    .quantity-btn {
+        width: 36px;
+        height: 36px;
+        font-size: var(--font-size-base);
+    }
+
+    .quantity-value {
+        font-size: var(--font-size-xl);
+        min-width: 48px;
+    }
+
+    .btn-icon-sm {
+        width: 24px;
+        height: 24px;
+    }
+}
