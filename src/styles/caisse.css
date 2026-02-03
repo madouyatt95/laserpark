@@ -572,3 +572,146 @@
         height: 24px;
     }
 }
+
+/* --- Expense Styles --- */
+.summary-card.expense-total {
+    color: var(--color-danger);
+}
+
+.summary-card.net-result {
+    color: var(--color-success);
+}
+
+.summary-card-value.expense {
+    color: var(--color-danger);
+}
+
+.summary-card-value.positive {
+    color: var(--color-success);
+}
+
+.summary-card-value.negative {
+    color: var(--color-danger);
+}
+
+.activity-item.expense-item {
+    border-left: 3px solid var(--color-danger);
+}
+
+.activity-amount.expense {
+    color: var(--color-danger);
+}
+
+/* --- FAB Menu --- */
+.fab-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    animation: fadeIn 0.2s ease;
+}
+
+.fab.active .rotated {
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+.fab-menu {
+    position: fixed;
+    bottom: calc(var(--nav-height) + 80px);
+    right: var(--spacing-4);
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--spacing-3);
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: all 0.2s ease;
+}
+
+.fab-menu.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.fab-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-full);
+    border: none;
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-fast);
+}
+
+.fab-menu-item.revenue {
+    background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark, #059669) 100%);
+    color: white;
+}
+
+.fab-menu-item.expense {
+    background: linear-gradient(135deg, var(--color-danger) 0%, #dc2626 100%);
+    color: white;
+}
+
+.fab-menu-item:hover {
+    transform: scale(1.05);
+}
+
+/* Payment chip styles */
+.payment-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--color-border);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.payment-chip:hover {
+    border-color: var(--color-border-hover);
+    background: var(--color-bg-elevated);
+}
+
+.payment-chip.selected {
+    border-color: var(--color-success);
+    background: var(--color-success-bg);
+}
+
+.payment-chip.cash.selected {
+    border-color: var(--color-success);
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.payment-chip.wave.selected {
+    border-color: var(--color-info);
+    background: var(--color-info-bg);
+    color: var(--color-info-light);
+}
+
+.payment-chip.orange_money.selected {
+    border-color: #f97316;
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
+}
+
+/* Empty state small */
+.empty-state-sm {
+    padding: var(--spacing-4);
+    text-align: center;
+    color: var(--color-text-tertiary);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-lg);
+}

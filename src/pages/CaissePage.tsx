@@ -1,44 +1,96 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, TrendingUp, CreditCard, Banknote, Smartphone, Printer, Ban, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, CreditCard, Banknote, Smartphone, Printer, Ban, ChevronLeft, ChevronRight, Calendar, Minus } from 'lucide-react';
 import { useParkStore } from '../stores/parkStore';
 import { useActivityStore } from '../stores/activityStore';
+import { useExpenseStore } from '../stores/expenseStore';
 import { useCategoryStore } from '../stores/categoryStore';
 import { useAuthStore } from '../stores/authStore';
-import { formatCurrency, formatTime, formatDate } from '../utils/helpers';
+import { formatCurrency, formatTime } from '../utils/helpers';
 import { printReceipt } from '../services/ReceiptService';
-import { Activity } from '../types';
+import { Activity, Expense } from '../types';
 import ActivityForm from '../components/caisse/ActivityForm';
+import ExpenseForm from '../components/caisse/ExpenseForm';
 import QuickShortcuts from '../components/caisse/QuickShortcuts';
 import '../styles/caisse.css';
 import MobileModal from '../components/common/MobileModal';
-import { format, addDays, isToday, isSameDay, startOfDay } from 'date-fns';
+import { format, isToday, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+type TransactionType = 'revenue' | 'expense';
+
+interface CombinedTransaction {
+    id: string;
+    type: TransactionType;
+    amount: number;
+    category_id: string;
+    payment_method: string;
+    date: string;
+    status?: string;
+    cancelled_reason?: string;
+    comment?: string;
+}
 
 const CaissePage: React.FC = () => {
     const [showActivityForm, setShowActivityForm] = useState(false);
+    const [showExpenseForm, setShowExpenseForm] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
     const [cancelReason, setCancelReason] = useState('');
     const [showReceiptConfirm, setShowReceiptConfirm] = useState(false);
     const [lastActivity, setLastActivity] = useState<Activity | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [showFabMenu, setShowFabMenu] = useState(false);
 
     const { user } = useAuthStore();
     const { selectedParkId, getSelectedPark } = useParkStore();
-    const { getActivitiesByDate, getTodayActivities, getRevenueByPayment, cancelActivity } = useActivityStore();
+    const { getActivitiesByDate, cancelActivity } = useActivityStore();
+    const { getExpensesByDate, getTodayExpensesTotal } = useExpenseStore();
     const { getCategory } = useCategoryStore();
 
     const selectedPark = getSelectedPark();
     const parkId = selectedParkId || '';
 
-    // Get activities for selected date
+    // Get transactions for selected date
     const dateActivities = useMemo(() => {
         return getActivitiesByDate(parkId, selectedDate);
     }, [parkId, selectedDate, getActivitiesByDate]);
 
+    const dateExpenses = useMemo(() => {
+        return getExpensesByDate(parkId, selectedDate);
+    }, [parkId, selectedDate, getExpensesByDate]);
+
+    // Combine and sort transactions
+    const allTransactions = useMemo((): CombinedTransaction[] => {
+        const activities: CombinedTransaction[] = dateActivities.map(a => ({
+            id: a.id,
+            type: 'revenue' as TransactionType,
+            amount: a.amount,
+            category_id: a.category_id,
+            payment_method: a.payment_method,
+            date: a.activity_date,
+            status: a.status,
+            cancelled_reason: a.cancelled_reason,
+        }));
+
+        const expenses: CombinedTransaction[] = dateExpenses.map(e => ({
+            id: e.id,
+            type: 'expense' as TransactionType,
+            amount: e.amount,
+            category_id: e.category_id,
+            payment_method: e.payment_method,
+            date: e.expense_date,
+            comment: e.comment,
+        }));
+
+        return [...activities, ...expenses].sort((a, b) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+    }, [dateActivities, dateExpenses]);
+
     const activeActivities = dateActivities.filter(a => a.status !== 'cancelled');
     const dateRevenue = activeActivities.reduce((sum, a) => sum + a.amount, 0);
-    const revenueByPayment = getRevenueByPayment(parkId, selectedDate);
+    const dateExpensesTotal = dateExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const netResult = dateRevenue - dateExpensesTotal;
 
     const isViewingToday = isToday(selectedDate);
 
@@ -92,8 +144,30 @@ const CaissePage: React.FC = () => {
         setShowActivityForm(false);
     };
 
+    const handleExpenseCreated = () => {
+        setShowExpenseForm(false);
+    };
+
     const handleQuickSaleComplete = () => {
-        // Quick sales auto-complete, no receipt prompt for now
+        // Quick sales auto-complete
+    };
+
+    const handleFabClick = () => {
+        if (showFabMenu) {
+            setShowFabMenu(false);
+        } else {
+            setShowFabMenu(true);
+        }
+    };
+
+    const openActivityForm = () => {
+        setShowFabMenu(false);
+        setShowActivityForm(true);
+    };
+
+    const openExpenseForm = () => {
+        setShowFabMenu(false);
+        setShowExpenseForm(true);
     };
 
     return (
@@ -146,100 +220,113 @@ const CaissePage: React.FC = () => {
                     </div>
                     <div className="summary-card-content">
                         <span className="summary-card-label">
-                            {isViewingToday ? 'Total du jour' : 'Total'}
+                            {isViewingToday ? 'Recettes' : 'Recettes'}
                         </span>
                         <span className="summary-card-value">{formatCurrency(dateRevenue)}</span>
                     </div>
                 </div>
 
                 <div className="summary-cards-row">
-                    <div className="summary-card cash">
+                    <div className="summary-card expense-total">
+                        <TrendingDown size={20} />
+                        <span className="summary-card-label">Dépenses</span>
+                        <span className="summary-card-value expense">{formatCurrency(dateExpensesTotal)}</span>
+                    </div>
+
+                    <div className="summary-card net-result">
                         <Banknote size={20} />
-                        <span className="summary-card-label">Espèces</span>
-                        <span className="summary-card-value">{formatCurrency(revenueByPayment.cash)}</span>
-                    </div>
-
-                    <div className="summary-card wave">
-                        <CreditCard size={20} />
-                        <span className="summary-card-label">Wave</span>
-                        <span className="summary-card-value">{formatCurrency(revenueByPayment.wave)}</span>
-                    </div>
-
-                    <div className="summary-card orange">
-                        <Smartphone size={20} />
-                        <span className="summary-card-label">Orange Money</span>
-                        <span className="summary-card-value">{formatCurrency(revenueByPayment.orange_money)}</span>
+                        <span className="summary-card-label">Résultat</span>
+                        <span className={`summary-card-value ${netResult >= 0 ? 'positive' : 'negative'}`}>
+                            {formatCurrency(netResult)}
+                        </span>
                     </div>
                 </div>
             </div>
 
-            {/* Activities List */}
+            {/* Transactions List */}
             <section className="section">
                 <div className="section-header">
                     <h2 className="section-title">
-                        {isViewingToday ? 'Activités du jour' : `Activités du ${format(selectedDate, 'd MMM', { locale: fr })}`}
+                        {isViewingToday ? 'Transactions du jour' : `Transactions du ${format(selectedDate, 'd MMM', { locale: fr })}`}
                     </h2>
-                    <span className="badge badge-primary">{activeActivities.length}</span>
+                    <span className="badge badge-primary">{allTransactions.length}</span>
                 </div>
 
-                {dateActivities.length === 0 ? (
+                {allTransactions.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state-icon">🎯</div>
-                        <h3 className="empty-state-title">Aucune activité</h3>
+                        <h3 className="empty-state-title">Aucune transaction</h3>
                         <p className="empty-state-text">
                             {isViewingToday
-                                ? "Cliquez sur le bouton + pour enregistrer votre première vente"
-                                : "Aucune vente enregistrée ce jour"}
+                                ? "Cliquez sur le bouton + pour enregistrer"
+                                : "Aucune transaction ce jour"}
                         </p>
                     </div>
                 ) : (
                     <div className="activities-list">
-                        {dateActivities.map((activity) => {
-                            const category = getCategory(activity.category_id);
-                            const isCancelled = activity.status === 'cancelled';
+                        {allTransactions.map((transaction) => {
+                            const category = getCategory(transaction.category_id);
+                            const isCancelled = transaction.status === 'cancelled';
+                            const isExpense = transaction.type === 'expense';
+
                             return (
                                 <div
-                                    key={activity.id}
-                                    className={`activity-item ${isCancelled ? 'cancelled' : ''}`}
+                                    key={transaction.id}
+                                    className={`activity-item ${isCancelled ? 'cancelled' : ''} ${isExpense ? 'expense-item' : ''}`}
                                 >
                                     <div
                                         className="activity-icon"
-                                        style={{ backgroundColor: category?.color ? `${category.color}20` : undefined }}
+                                        style={{
+                                            backgroundColor: isExpense
+                                                ? 'rgba(239, 68, 68, 0.15)'
+                                                : category?.color ? `${category.color}20` : undefined
+                                        }}
                                     >
-                                        <span>{category?.icon || '🎯'}</span>
+                                        <span>{isExpense ? '💸' : (category?.icon || '🎯')}</span>
                                     </div>
                                     <div className="activity-content">
-                                        <span className="activity-name">{category?.name || 'Activité'}</span>
+                                        <span className="activity-name">
+                                            {isExpense && transaction.comment
+                                                ? transaction.comment
+                                                : (category?.name || 'Transaction')}
+                                        </span>
                                         <span className="activity-meta">
-                                            {formatTime(activity.activity_date)} • x{activity.quantity}
+                                            {formatTime(transaction.date)}
+                                            {isExpense && category && ` • ${category.name}`}
                                         </span>
                                         {isCancelled && (
                                             <span className="activity-cancelled-badge">
-                                                Annulé: {activity.cancelled_reason}
+                                                Annulé: {transaction.cancelled_reason}
                                             </span>
                                         )}
                                     </div>
                                     <div className="activity-payment">
-                                        <span className={`payment-badge ${activity.payment_method}`}>
-                                            {activity.payment_method === 'cash' ? 'Espèces' :
-                                                activity.payment_method === 'wave' ? 'Wave' : 'OM'}
+                                        <span className={`payment-badge ${transaction.payment_method}`}>
+                                            {transaction.payment_method === 'cash' ? 'Espèces' :
+                                                transaction.payment_method === 'wave' ? 'Wave' : 'OM'}
                                         </span>
-                                        <span className={`activity-amount ${isCancelled ? 'cancelled' : ''}`}>
-                                            {formatCurrency(activity.amount)}
+                                        <span className={`activity-amount ${isCancelled ? 'cancelled' : ''} ${isExpense ? 'expense' : ''}`}>
+                                            {isExpense ? '-' : '+'}{formatCurrency(transaction.amount)}
                                         </span>
                                     </div>
-                                    {!isCancelled && isViewingToday && (
+                                    {!isCancelled && !isExpense && isViewingToday && (
                                         <div className="activity-actions">
                                             <button
                                                 className="btn-icon-sm"
-                                                onClick={() => handlePrintReceipt(activity)}
+                                                onClick={() => {
+                                                    const activity = dateActivities.find(a => a.id === transaction.id);
+                                                    if (activity) handlePrintReceipt(activity);
+                                                }}
                                                 title="Imprimer ticket"
                                             >
                                                 <Printer size={14} />
                                             </button>
                                             <button
                                                 className="btn-icon-sm btn-danger-ghost"
-                                                onClick={() => handleCancelClick(activity)}
+                                                onClick={() => {
+                                                    const activity = dateActivities.find(a => a.id === transaction.id);
+                                                    if (activity) handleCancelClick(activity);
+                                                }}
                                                 title="Annuler"
                                             >
                                                 <Ban size={14} />
@@ -253,15 +340,36 @@ const CaissePage: React.FC = () => {
                 )}
             </section>
 
-            {/* FAB Button - only show when viewing today */}
+            {/* FAB Menu - only show when viewing today */}
             {isViewingToday && (
-                <button
-                    className="fab"
-                    onClick={() => setShowActivityForm(true)}
-                    aria-label="Nouvelle activité"
-                >
-                    <Plus size={28} />
-                </button>
+                <>
+                    {showFabMenu && (
+                        <div className="fab-backdrop" onClick={() => setShowFabMenu(false)} />
+                    )}
+                    <div className={`fab-menu ${showFabMenu ? 'open' : ''}`}>
+                        <button
+                            className="fab-menu-item expense"
+                            onClick={openExpenseForm}
+                        >
+                            <Minus size={20} />
+                            <span>Dépense</span>
+                        </button>
+                        <button
+                            className="fab-menu-item revenue"
+                            onClick={openActivityForm}
+                        >
+                            <Plus size={20} />
+                            <span>Recette</span>
+                        </button>
+                    </div>
+                    <button
+                        className={`fab ${showFabMenu ? 'active' : ''}`}
+                        onClick={handleFabClick}
+                        aria-label="Nouvelle transaction"
+                    >
+                        <Plus size={28} className={showFabMenu ? 'rotated' : ''} />
+                    </button>
+                </>
             )}
 
             {/* Activity Form Modal */}
@@ -269,6 +377,15 @@ const CaissePage: React.FC = () => {
                 isOpen={showActivityForm}
                 onClose={() => setShowActivityForm(false)}
                 onActivityCreated={handleActivityCreated}
+                parkId={parkId}
+                userId={user?.id || ''}
+            />
+
+            {/* Expense Form Modal */}
+            <ExpenseForm
+                isOpen={showExpenseForm}
+                onClose={() => setShowExpenseForm(false)}
+                onExpenseCreated={handleExpenseCreated}
                 parkId={parkId}
                 userId={user?.id || ''}
             />
