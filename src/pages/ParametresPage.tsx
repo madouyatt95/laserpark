@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     User,
@@ -14,20 +14,12 @@ import {
     Users,
     Mail,
     Key,
-    Tag,
-    Trash2,
-    Edit3,
-    Database,
-    AlertTriangle,
-    RefreshCw
+    Tag
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useParkStore } from '../stores/parkStore';
 import { useUserStore } from '../stores/userStore';
-import { useActivityStore } from '../stores/activityStore';
-import { useExpenseStore } from '../stores/expenseStore';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { UserRole, User as UserType } from '../types';
+import { UserRole } from '../types';
 import PinLock from '../components/auth/PinLock';
 import MobileModal from '../components/common/MobileModal';
 import '../styles/parametres.css';
@@ -36,18 +28,13 @@ const ParametresPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, logout, canManagePlanning, canAccessClosure } = useAuthStore();
     const { parks, toggleParkStatus } = useParkStore();
-    const { getAllUsers, addUser, toggleUserStatus, deleteUser } = useUserStore();
+    const { getAllUsers, addUser, toggleUserStatus } = useUserStore();
 
     const isSuperAdmin = user?.role === 'super_admin';
     const isManager = user?.role === 'manager';
     const [activeSection, setActiveSection] = useState<string | null>(null);
     const [showPinLock, setShowPinLock] = useState(false);
     const [showAddUser, setShowAddUser] = useState(false);
-    const [showEditUser, setShowEditUser] = useState(false);
-    const [isRefreshingData, setIsRefreshingData] = useState(false);
-    const [editingUser, setEditingUser] = useState<UserType | null>(null);
-    const [supabaseUsers, setSupabaseUsers] = useState<UserType[]>([]);
-    const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
     // New user form state
     const [newUserForm, setNewUserForm] = useState({
@@ -58,44 +45,7 @@ const ParametresPage: React.FC = () => {
         park_id: parks[0]?.id || '',
     });
 
-    // Edit user form state
-    const [editUserForm, setEditUserForm] = useState({
-        role: 'staff' as UserRole,
-        park_id: '',
-        is_active: true,
-    });
-
-    // Fetch users from Supabase
-    const fetchSupabaseUsers = async () => {
-        if (!isSupabaseConfigured()) return;
-
-        setIsLoadingUsers(true);
-        try {
-            const { data, error } = await supabase!
-                .from('profiles')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('Error fetching users:', error);
-            } else {
-                setSupabaseUsers(data as UserType[]);
-            }
-        } catch (err) {
-            console.error('Error fetching users:', err);
-        } finally {
-            setIsLoadingUsers(false);
-        }
-    };
-
-    useEffect(() => {
-        if (isSuperAdmin && activeSection === 'users') {
-            fetchSupabaseUsers();
-        }
-    }, [isSuperAdmin, activeSection]);
-
-    // Use Supabase users if configured, otherwise local store
-    const allUsers = isSupabaseConfigured() ? supabaseUsers : getAllUsers();
+    const allUsers = getAllUsers();
 
     // Filter quick links based on permissions
     const allQuickLinks = [
@@ -137,103 +87,13 @@ const ParametresPage: React.FC = () => {
         setShowAddUser(false);
     };
 
-    const handleEditUser = (u: UserType) => {
-        setEditingUser(u);
-        setEditUserForm({
-            role: u.role || 'staff',
-            park_id: u.park_id || parks[0]?.id || '',
-            is_active: u.is_active,
-        });
-        setShowEditUser(true);
-    };
-
-    const handleSaveUserEdit = async () => {
-        if (!editingUser) return;
-
-        if (isSupabaseConfigured()) {
-            try {
-                const { error } = await supabase!
-                    .from('profiles')
-                    .update({
-                        role: editUserForm.role,
-                        park_id: editUserForm.role === 'super_admin' ? null : editUserForm.park_id,
-                        is_active: editUserForm.is_active,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', editingUser.id);
-
-                if (error) throw error;
-
-                // Refresh users list
-                await fetchSupabaseUsers();
-                setShowEditUser(false);
-                setEditingUser(null);
-            } catch (err) {
-                console.error('Error updating user:', err);
-                alert('Erreur lors de la mise à jour');
-            }
-        } else {
-            // Local store update
-            toggleUserStatus(editingUser.id);
-            setShowEditUser(false);
-            setEditingUser(null);
-        }
-    };
-
-    const handleDeleteUser = async (userId: string) => {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
-
-        if (isSupabaseConfigured()) {
-            try {
-                const { error } = await supabase!
-                    .from('profiles')
-                    .delete()
-                    .eq('id', userId);
-
-                if (error) throw error;
-
-                await fetchSupabaseUsers();
-            } catch (err) {
-                console.error('Error deleting user:', err);
-                alert('Erreur lors de la suppression. L\'utilisateur doit être supprimé via Supabase Dashboard.');
-            }
-        } else {
-            deleteUser(userId);
-        }
-    };
-
-    // Refresh data from Supabase (instead of destructive clear)
-    const handleRefreshData = async () => {
-        if (!isSupabaseConfigured()) {
-            alert('Supabase non configuré.');
-            return;
-        }
-
-        setIsRefreshingData(true);
-        try {
-            // Clear local cache and reload from Supabase
-            localStorage.removeItem('laserpark-activities');
-            localStorage.removeItem('laserpark-expenses');
-
-            // Reload the page to fetch fresh data from Supabase
-            window.location.reload();
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-            alert('Erreur lors du rafraîchissement.');
-            setIsRefreshingData(false);
-        }
-    };
-
-    const getRoleBadge = (role: UserRole | null) => {
-        if (!role) {
-            return { label: 'En attente', class: 'badge-warning' };
-        }
+    const getRoleBadge = (role: UserRole) => {
         const config = {
             super_admin: { label: 'Super Admin', class: 'badge-primary' },
             manager: { label: 'Manager', class: 'badge-info' },
             staff: { label: 'Staff', class: 'badge-secondary' },
         };
-        return config[role] || { label: 'Inconnu', class: 'badge-secondary' };
+        return config[role];
     };
 
     return (
@@ -323,20 +183,6 @@ const ParametresPage: React.FC = () => {
                             </div>
                             <ChevronRight size={20} className={`settings-item-arrow ${activeSection === 'parks' ? 'active' : ''}`} />
                         </button>
-
-                        <button
-                            className="settings-item"
-                            onClick={() => setActiveSection(activeSection === 'data' ? null : 'data')}
-                        >
-                            <div className="settings-item-icon">
-                                <Database size={20} />
-                            </div>
-                            <div className="settings-item-content">
-                                <span className="settings-item-label">Données</span>
-                                <span className="settings-item-description">Gérer les données locales</span>
-                            </div>
-                            <ChevronRight size={20} className={`settings-item-arrow ${activeSection === 'data' ? 'active' : ''}`} />
-                        </button>
                     </>
                 )}
 
@@ -359,62 +205,40 @@ const ParametresPage: React.FC = () => {
             {activeSection === 'users' && isSuperAdmin && (
                 <section className="settings-section">
                     <div className="settings-section-header">
-                        <h3 className="settings-section-title">
-                            Utilisateurs ({allUsers.length})
-                            {isLoadingUsers && <RefreshCw size={16} className="spinner-inline" />}
-                        </h3>
-                        <button className="btn btn-sm btn-secondary" onClick={fetchSupabaseUsers} style={{ marginRight: '0.5rem' }}>
-                            <RefreshCw size={14} />
+                        <h3 className="settings-section-title">Utilisateurs ({allUsers.length})</h3>
+                        <button className="btn btn-sm btn-primary" onClick={() => setShowAddUser(true)}>
+                            <UserPlus size={16} />
+                            Ajouter
                         </button>
                     </div>
-                    <p className="settings-section-note" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                        ℹ️ Les nouveaux utilisateurs s'inscrivent sur /signup et doivent être activés ici avec un rôle.
-                    </p>
                     <div className="users-list">
                         {allUsers.map(u => {
                             const badge = getRoleBadge(u.role);
                             const parkName = parks.find(p => p.id === u.park_id)?.name;
-                            const isPending = !u.is_active || !u.role;
                             return (
-                                <div key={u.id} className={`user-item ${!u.is_active ? 'inactive' : ''} ${isPending ? 'pending' : ''}`}>
+                                <div key={u.id} className={`user-item ${!u.is_active ? 'inactive' : ''}`}>
                                     <div className="user-item-avatar">
-                                        {u.full_name?.charAt(0) || '?'}
+                                        {u.full_name.charAt(0)}
                                     </div>
                                     <div className="user-item-info">
-                                        <span className="user-item-name">{u.full_name || 'Sans nom'}</span>
+                                        <span className="user-item-name">{u.full_name}</span>
                                         <span className="user-item-email">{u.email}</span>
                                         <div className="user-item-meta">
                                             <span className={`badge ${badge.class}`}>{badge.label}</span>
                                             {parkName && <span className="user-item-park">{parkName}</span>}
-                                            {isPending && <span className="badge badge-warning">⏳ En attente</span>}
                                         </div>
                                     </div>
                                     {u.id !== user?.id && (
-                                        <div className="user-item-actions">
-                                            <button
-                                                className="btn btn-sm btn-secondary"
-                                                onClick={() => handleEditUser(u)}
-                                                title="Modifier"
-                                            >
-                                                <Edit3 size={14} />
-                                            </button>
-                                            <button
-                                                className="btn btn-sm btn-danger"
-                                                onClick={() => handleDeleteUser(u.id)}
-                                                title="Supprimer"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
+                                        <button
+                                            className={`btn btn-sm ${u.is_active ? 'btn-success' : 'btn-secondary'}`}
+                                            onClick={() => toggleUserStatus(u.id)}
+                                        >
+                                            {u.is_active ? 'Actif' : 'Inactif'}
+                                        </button>
                                     )}
                                 </div>
                             );
                         })}
-                        {allUsers.length === 0 && (
-                            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1rem' }}>
-                                Aucun utilisateur trouvé
-                            </p>
-                        )}
                     </div>
                 </section>
             )}
@@ -445,39 +269,6 @@ const ParametresPage: React.FC = () => {
                 </section>
             )}
 
-            {/* Data Management Section */}
-            {activeSection === 'data' && isSuperAdmin && (
-                <section className="settings-section">
-                    <h3 className="settings-section-title">Gestion des données</h3>
-                    <div className="data-actions">
-                        <div className="data-action-item">
-                            <div className="data-action-info">
-                                <RefreshCw size={20} color="var(--color-primary)" />
-                                <div>
-                                    <span className="data-action-label">Actualiser les données</span>
-                                    <span className="data-action-description">Recharge les données depuis Supabase (efface le cache local)</span>
-                                </div>
-                            </div>
-                            <button
-                                className="btn btn-sm btn-primary"
-                                onClick={handleRefreshData}
-                                disabled={isRefreshingData}
-                            >
-                                {isRefreshingData ? (
-                                    <span className="spinner-inline" />
-                                ) : (
-                                    <RefreshCw size={14} />
-                                )}
-                                Actualiser
-                            </button>
-                        </div>
-                        <p className="settings-section-note">
-                            💡 Les transactions sont stockées dans Supabase. Cette action recharge les données fraîches depuis le serveur.
-                        </p>
-                    </div>
-                </section>
-            )}
-
             {/* Logout Button */}
             <button className="btn btn-danger logout-btn" onClick={logout}>
                 Se déconnecter
@@ -485,7 +276,7 @@ const ParametresPage: React.FC = () => {
 
             {/* Version Info */}
             <div className="version-info">
-                <p>LaserPark PWA v1.3.0</p>
+                <p>LaserPark PWA v1.2.0</p>
                 <p>© 2026 LaserPark</p>
             </div>
 
@@ -500,43 +291,70 @@ const ParametresPage: React.FC = () => {
                 />
             )}
 
-            {/* Add User Modal - Removed since users self-register */}
-            {/* Users should now use /signup page */}
-
-            {/* Edit User Modal */}
+            {/* Add User Modal */}
             <MobileModal
-                isOpen={showEditUser}
-                onClose={() => { setShowEditUser(false); setEditingUser(null); }}
-                title={`Modifier ${editingUser?.full_name || 'utilisateur'}`}
+                isOpen={showAddUser}
+                onClose={() => setShowAddUser(false)}
+                title="Nouvel utilisateur"
             >
                 <div className="form-group">
+                    <label className="input-label">Nom complet</label>
+                    <div className="input-with-icon">
+                        <User size={18} />
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder="Jean Dupont"
+                            value={newUserForm.full_name}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, full_name: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div className="form-group">
                     <label className="input-label">Email</label>
-                    <input
-                        type="email"
-                        className="input"
-                        value={editingUser?.email || ''}
-                        disabled
-                    />
+                    <div className="input-with-icon">
+                        <Mail size={18} />
+                        <input
+                            type="email"
+                            className="input"
+                            placeholder="email@laserpark.ci"
+                            value={newUserForm.email}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label className="input-label">Mot de passe</label>
+                    <div className="input-with-icon">
+                        <Key size={18} />
+                        <input
+                            type="password"
+                            className="input"
+                            placeholder="••••••••"
+                            value={newUserForm.password}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                        />
+                    </div>
                 </div>
                 <div className="form-group">
                     <label className="input-label">Rôle</label>
                     <select
                         className="input"
-                        value={editUserForm.role}
-                        onChange={(e) => setEditUserForm({ ...editUserForm, role: e.target.value as UserRole })}
+                        value={newUserForm.role}
+                        onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value as UserRole })}
                     >
                         <option value="staff">Staff</option>
                         <option value="manager">Manager</option>
                         <option value="super_admin">Super Admin</option>
                     </select>
                 </div>
-                {editUserForm.role !== 'super_admin' && (
+                {newUserForm.role !== 'super_admin' && (
                     <div className="form-group">
                         <label className="input-label">Parc assigné</label>
                         <select
                             className="input"
-                            value={editUserForm.park_id}
-                            onChange={(e) => setEditUserForm({ ...editUserForm, park_id: e.target.value })}
+                            value={newUserForm.park_id}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, park_id: e.target.value })}
                         >
                             {parks.filter(p => p.is_active).map(park => (
                                 <option key={park.id} value={park.id}>{park.name}</option>
@@ -544,31 +362,13 @@ const ParametresPage: React.FC = () => {
                         </select>
                     </div>
                 )}
-                <div className="form-group">
-                    <label className="input-label">Statut</label>
-                    <div className="toggle-group">
-                        <button
-                            type="button"
-                            className={`btn btn-sm ${editUserForm.is_active ? 'btn-success' : 'btn-secondary'}`}
-                            onClick={() => setEditUserForm({ ...editUserForm, is_active: true })}
-                        >
-                            Actif
-                        </button>
-                        <button
-                            type="button"
-                            className={`btn btn-sm ${!editUserForm.is_active ? 'btn-danger' : 'btn-secondary'}`}
-                            onClick={() => setEditUserForm({ ...editUserForm, is_active: false })}
-                        >
-                            Inactif
-                        </button>
-                    </div>
-                </div>
                 <div className="form-actions">
-                    <button className="btn btn-secondary" onClick={() => { setShowEditUser(false); setEditingUser(null); }}>
+                    <button className="btn btn-secondary" onClick={() => setShowAddUser(false)}>
                         Annuler
                     </button>
-                    <button className="btn btn-primary" onClick={handleSaveUserEdit}>
-                        Sauvegarder
+                    <button className="btn btn-primary" onClick={handleAddUser}>
+                        <UserPlus size={16} />
+                        Créer
                     </button>
                 </div>
             </MobileModal>

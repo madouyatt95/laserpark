@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle, UserPlus, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Zap, Eye, EyeOff, AlertCircle, UserPlus, ArrowLeft } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useParkStore } from '../stores/parkStore';
 import '../styles/login.css';
 
 const SignupPage: React.FC = () => {
+    const navigate = useNavigate();
+    const { parks } = useParkStore();
+
     const [formData, setFormData] = useState({
         full_name: '',
         email: '',
         password: '',
         confirmPassword: '',
+        role: 'staff' as 'staff' | 'manager',
+        park_id: parks[0]?.id || '',
     });
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -57,6 +63,8 @@ const SignupPage: React.FC = () => {
                 options: {
                     data: {
                         full_name: formData.full_name,
+                        role: formData.role,
+                        park_id: formData.park_id,
                     }
                 }
             });
@@ -66,33 +74,18 @@ const SignupPage: React.FC = () => {
             }
 
             if (data.user) {
-                // Create profile with is_active: false - needs admin approval
-                // Role and park_id will be assigned by admin
+                // Update profile with park_id
                 await supabase!
                     .from('profiles')
-                    .upsert({
-                        id: data.user.id,
-                        email: formData.email,
-                        full_name: formData.full_name,
-                        role: null, // No role until admin approves
-                        park_id: null, // No park until admin assigns
-                        is_active: false, // Inactive until admin approves
-                    });
+                    .update({ park_id: formData.park_id })
+                    .eq('id', data.user.id);
             }
 
             setSuccess(true);
         } catch (err: any) {
             console.error('Signup error:', err);
-            const errorMessage = err.message?.toLowerCase() || '';
-
-            if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
+            if (err.message?.includes('already registered')) {
                 setError('Cet email est déjà utilisé');
-            } else if (errorMessage.includes('invalid') && errorMessage.includes('email')) {
-                setError('Format d\'email invalide. Vérifiez votre adresse email.');
-            } else if (errorMessage.includes('password')) {
-                setError('Le mot de passe ne respecte pas les exigences de sécurité.');
-            } else if (errorMessage.includes('rate') || errorMessage.includes('limit')) {
-                setError('Trop de tentatives. Veuillez réessayer dans quelques minutes.');
             } else {
                 setError(err.message || 'Erreur lors de l\'inscription');
             }
@@ -111,16 +104,13 @@ const SignupPage: React.FC = () => {
 
                 <div className="login-container">
                     <div className="signup-success glass-panel">
-                        <div className="success-icon">⏳</div>
-                        <h2>Inscription en attente</h2>
+                        <div className="success-icon">✅</div>
+                        <h2>Inscription réussie !</h2>
                         <p>
-                            Votre compte <strong>{formData.email}</strong> a été créé.
+                            Vérifiez votre email <strong>{formData.email}</strong> pour confirmer votre compte.
                         </p>
-                        <p className="text-muted" style={{ marginTop: '0.5rem' }}>
-                            Un administrateur doit approuver votre compte et vous attribuer un rôle avant que vous puissiez vous connecter.
-                        </p>
-                        <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                            Contactez votre responsable pour activer votre accès.
+                        <p className="text-muted">
+                            Vous pourrez ensuite vous connecter avec vos identifiants.
                         </p>
                         <Link to="/login" className="btn btn-primary btn-lg">
                             Retour à la connexion
@@ -221,7 +211,23 @@ const SignupPage: React.FC = () => {
                         />
                     </div>
 
-                    {/* Note: Park will be assigned by admin after approval */}
+                    <div className="input-group">
+                        <label className="input-label" htmlFor="park_id">Parc assigné</label>
+                        <select
+                            id="park_id"
+                            name="park_id"
+                            className="input"
+                            value={formData.park_id}
+                            onChange={handleChange}
+                            required
+                        >
+                            {parks.filter(p => p.is_active).map(park => (
+                                <option key={park.id} value={park.id}>
+                                    {park.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
                     <button
                         type="submit"

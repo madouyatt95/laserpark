@@ -123,7 +123,6 @@ export const useActivityStore = create<ActivityState>()(
 
             addActivity: async (parkId, userId, data) => {
                 if (isSupabaseConfigured()) {
-                    const now = new Date().toISOString();
                     const newActivityData = {
                         park_id: parkId,
                         category_id: data.category_id,
@@ -133,7 +132,6 @@ export const useActivityStore = create<ActivityState>()(
                         comment: data.comment,
                         created_by: userId,
                         status: 'active',
-                        activity_date: now, // Required field
                     };
 
                     const { data: newActivity, error } = await supabase!
