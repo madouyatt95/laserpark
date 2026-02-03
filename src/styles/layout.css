@@ -320,11 +320,24 @@ input,
 
 .modal-body {
     padding: var(--spacing-4);
-    overflow-y: auto;
+    padding-bottom: var(--spacing-6);
+    /* Extra padding at bottom for visibility */
+    overflow-y: scroll;
+    /* Force scroll instead of auto */
+    overflow-x: hidden;
     flex: 1 1 auto;
     min-height: 0;
+    max-height: calc(90dvh - 70px);
+    /* Explicit max height minus header */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    touch-action: pan-y;
+    /* Allow vertical touch scroll */
+}
+
+/* Force scrollable content on iOS */
+.modal-body>* {
+    touch-action: pan-y;
 }
 
 .modal-footer {
