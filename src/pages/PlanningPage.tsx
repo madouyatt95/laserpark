@@ -4,8 +4,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Users,
-    Calendar,
     Clock,
+    Edit2,
     Trash2
 } from 'lucide-react';
 import { useParkStore } from '../stores/parkStore';
@@ -17,7 +17,16 @@ import MobileModal from '../components/common/MobileModal';
 
 const PlanningPage: React.FC = () => {
     const { selectedParkId } = useParkStore();
-    const { getMembersByPark, addMember, addShift, getWeekShifts, deleteShift } = usePlanningStore();
+    const {
+        getMembersByPark,
+        addMember,
+        updateMember,
+        toggleMemberStatus,
+        addShift,
+        updateShift,
+        getWeekShifts,
+        deleteShift
+    } = usePlanningStore();
 
     const parkId = selectedParkId || '';
     const members = getMembersByPark(parkId);
@@ -25,11 +34,18 @@ const PlanningPage: React.FC = () => {
     const [currentWeekStart, setCurrentWeekStart] = useState(() =>
         startOfWeek(new Date(), { weekStartsOn: 1 })
     );
-    const [showAddMember, setShowAddMember] = useState(false);
-    const [showAddShift, setShowAddShift] = useState(false);
-    const [selectedMember, setSelectedMember] = useState<string | null>(null);
+
+    // Member modal states
+    const [showMemberModal, setShowMemberModal] = useState(false);
+    const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+    const [memberName, setMemberName] = useState('');
+    const [memberRole, setMemberRole] = useState<'staff' | 'manager'>('staff');
+
+    // Shift modal states
+    const [showShiftModal, setShowShiftModal] = useState(false);
+    const [editingShift, setEditingShift] = useState<Shift | null>(null);
+    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
     const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-    const [newMemberName, setNewMemberName] = useState('');
     const [shiftStart, setShiftStart] = useState('09:00');
     const [shiftEnd, setShiftEnd] = useState('18:00');
 
@@ -50,50 +66,110 @@ const PlanningPage: React.FC = () => {
         return weekShifts.find(s => s.member_id === memberId && s.date === dateStr);
     };
 
-    const handleAddMember = () => {
-        if (!newMemberName.trim()) return;
-
-        addMember({
-            park_id: parkId,
-            name: newMemberName.trim(),
-            role: 'staff',
-            is_active: true,
-        });
-
-        setNewMemberName('');
-        setShowAddMember(false);
+    // Member handlers
+    const openAddMemberModal = () => {
+        setEditingMember(null);
+        setMemberName('');
+        setMemberRole('staff');
+        setShowMemberModal(true);
     };
 
-    const handleAddShift = () => {
-        if (!selectedMember || !selectedDay) return;
-
-        addShift({
-            park_id: parkId,
-            member_id: selectedMember,
-            date: format(selectedDay, 'yyyy-MM-dd'),
-            start_time: shiftStart,
-            end_time: shiftEnd,
-        });
-
-        setShowAddShift(false);
-        setSelectedMember(null);
-        setSelectedDay(null);
+    const openEditMemberModal = (member: TeamMember) => {
+        setEditingMember(member);
+        setMemberName(member.name);
+        setMemberRole(member.role);
+        setShowMemberModal(true);
     };
 
+    const handleSaveMember = () => {
+        if (!memberName.trim()) return;
+
+        if (editingMember) {
+            updateMember(editingMember.id, {
+                name: memberName.trim(),
+                role: memberRole,
+            });
+        } else {
+            addMember({
+                park_id: parkId,
+                name: memberName.trim(),
+                role: memberRole,
+                is_active: true,
+            });
+        }
+
+        setShowMemberModal(false);
+        setEditingMember(null);
+    };
+
+    const handleDeleteMember = () => {
+        if (!editingMember) return;
+        if (confirm(`Supprimer ${editingMember.name} de l'équipe ?`)) {
+            toggleMemberStatus(editingMember.id);
+            setShowMemberModal(false);
+            setEditingMember(null);
+        }
+    };
+
+    // Shift handlers
     const handleCellClick = (memberId: string, date: Date) => {
         const existingShift = getShiftForMemberDay(memberId, date);
 
         if (existingShift) {
-            // Delete shift if exists
-            if (confirm('Supprimer ce shift ?')) {
-                deleteShift(existingShift.id);
-            }
-        } else {
-            // Open add shift modal
-            setSelectedMember(memberId);
+            // Open edit modal with existing shift data
+            setEditingShift(existingShift);
+            setSelectedMemberId(memberId);
             setSelectedDay(date);
-            setShowAddShift(true);
+            setShiftStart(existingShift.start_time);
+            setShiftEnd(existingShift.end_time);
+            setShowShiftModal(true);
+        } else {
+            // Open add modal
+            setEditingShift(null);
+            setSelectedMemberId(memberId);
+            setSelectedDay(date);
+            setShiftStart('09:00');
+            setShiftEnd('18:00');
+            setShowShiftModal(true);
         }
+    };
+
+    const handleSaveShift = () => {
+        if (!selectedMemberId || !selectedDay) return;
+
+        if (editingShift) {
+            updateShift(editingShift.id, {
+                start_time: shiftStart,
+                end_time: shiftEnd,
+            });
+        } else {
+            addShift({
+                park_id: parkId,
+                member_id: selectedMemberId,
+                date: format(selectedDay, 'yyyy-MM-dd'),
+                start_time: shiftStart,
+                end_time: shiftEnd,
+            });
+        }
+
+        setShowShiftModal(false);
+        setEditingShift(null);
+        setSelectedMemberId(null);
+        setSelectedDay(null);
+    };
+
+    const handleDeleteShift = () => {
+        if (!editingShift) return;
+        if (confirm('Supprimer ce shift ?')) {
+            deleteShift(editingShift.id);
+            setShowShiftModal(false);
+            setEditingShift(null);
+        }
+    };
+
+    const getMemberName = (memberId: string): string => {
+        const member = members.find(m => m.id === memberId);
+        return member?.name || '';
     };
 
     return (
@@ -102,7 +178,7 @@ const PlanningPage: React.FC = () => {
                 <h1 className="page-title">Planning Équipes</h1>
                 <button
                     className="btn btn-sm btn-primary"
-                    onClick={() => setShowAddMember(true)}
+                    onClick={openAddMemberModal}
                 >
                     <Plus size={16} />
                     Ajouter
@@ -145,16 +221,19 @@ const PlanningPage: React.FC = () => {
                     <div className="empty-planning">
                         <Users size={32} />
                         <p>Aucun membre dans l'équipe</p>
-                        <button className="btn btn-primary" onClick={() => setShowAddMember(true)}>
+                        <button className="btn btn-primary" onClick={openAddMemberModal}>
                             Ajouter un membre
                         </button>
                     </div>
                 ) : (
                     members.map(member => (
                         <div key={member.id} className="planning-row">
-                            <div className="planning-cell member-cell">
+                            <div
+                                className="planning-cell member-cell clickable"
+                                onClick={() => openEditMemberModal(member)}
+                            >
                                 <span className="member-name">{member.name}</span>
-                                <span className="member-role">{member.role}</span>
+                                <span className="member-role">{member.role === 'manager' ? 'Manager' : 'Staff'}</span>
                             </div>
                             {weekDays.map(day => {
                                 const shift = getShiftForMemberDay(member.id, day);
@@ -178,44 +257,65 @@ const PlanningPage: React.FC = () => {
                 )}
             </div>
 
-            {/* Add Member Modal */}
+            {/* Member Modal (Add/Edit) */}
             <MobileModal
-                isOpen={showAddMember}
-                onClose={() => setShowAddMember(false)}
-                title="Nouveau membre"
+                isOpen={showMemberModal}
+                onClose={() => setShowMemberModal(false)}
+                title={editingMember ? 'Modifier le membre' : 'Nouveau membre'}
                 size="sm"
             >
                 <div className="form-group">
+                    <label className="input-label">Nom complet</label>
                     <input
                         type="text"
                         className="input"
                         placeholder="Nom complet"
-                        value={newMemberName}
-                        onChange={(e) => setNewMemberName(e.target.value)}
+                        value={memberName}
+                        onChange={(e) => setMemberName(e.target.value)}
                         autoFocus
                     />
                 </div>
+                <div className="form-group">
+                    <label className="input-label">Rôle</label>
+                    <select
+                        className="input"
+                        value={memberRole}
+                        onChange={(e) => setMemberRole(e.target.value as 'staff' | 'manager')}
+                    >
+                        <option value="staff">Staff</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                </div>
                 <div className="form-actions">
-                    <button className="btn btn-secondary" onClick={() => setShowAddMember(false)}>
+                    {editingMember && (
+                        <button
+                            className="btn btn-danger-ghost"
+                            onClick={handleDeleteMember}
+                        >
+                            <Trash2 size={16} />
+                            Supprimer
+                        </button>
+                    )}
+                    <button className="btn btn-secondary" onClick={() => setShowMemberModal(false)}>
                         Annuler
                     </button>
-                    <button className="btn btn-primary" onClick={handleAddMember}>
-                        Ajouter
+                    <button className="btn btn-primary" onClick={handleSaveMember}>
+                        {editingMember ? 'Enregistrer' : 'Ajouter'}
                     </button>
                 </div>
             </MobileModal>
 
-            {/* Add Shift Modal */}
+            {/* Shift Modal (Add/Edit) */}
             <MobileModal
-                isOpen={showAddShift && selectedDay !== null}
-                onClose={() => setShowAddShift(false)}
-                title="Ajouter un shift"
+                isOpen={showShiftModal && selectedDay !== null}
+                onClose={() => setShowShiftModal(false)}
+                title={editingShift ? 'Modifier le shift' : 'Ajouter un shift'}
                 size="sm"
             >
                 {selectedDay && (
                     <>
                         <p className="shift-date-label">
-                            {format(selectedDay, 'EEEE d MMMM', { locale: fr })}
+                            {getMemberName(selectedMemberId || '')} • {format(selectedDay, 'EEEE d MMMM', { locale: fr })}
                         </p>
                         <div className="shift-time-inputs">
                             <div className="time-input-group">
@@ -238,11 +338,20 @@ const PlanningPage: React.FC = () => {
                             </div>
                         </div>
                         <div className="form-actions">
-                            <button className="btn btn-secondary" onClick={() => setShowAddShift(false)}>
+                            {editingShift && (
+                                <button
+                                    className="btn btn-danger-ghost"
+                                    onClick={handleDeleteShift}
+                                >
+                                    <Trash2 size={16} />
+                                    Supprimer
+                                </button>
+                            )}
+                            <button className="btn btn-secondary" onClick={() => setShowShiftModal(false)}>
                                 Annuler
                             </button>
-                            <button className="btn btn-primary" onClick={handleAddShift}>
-                                Ajouter
+                            <button className="btn btn-primary" onClick={handleSaveShift}>
+                                {editingShift ? 'Enregistrer' : 'Ajouter'}
                             </button>
                         </div>
                     </>

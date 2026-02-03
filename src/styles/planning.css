@@ -101,6 +101,15 @@
     background: var(--color-bg-tertiary);
 }
 
+.member-cell.clickable {
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.member-cell.clickable:hover {
+    background: var(--color-bg-elevated);
+}
+
 .member-name {
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
