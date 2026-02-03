@@ -29,7 +29,22 @@ export const useAuthStore = create<AuthState>()(
             login: async (email: string, password: string) => {
                 set({ isLoading: true, error: null });
 
-                // Option A: Supabase Auth
+                // Priority 1: Check for demo credentials FIRST
+                const userStore = useUserStore.getState();
+                const demoUser = userStore.validateCredentials(email, password);
+
+                if (demoUser) {
+                    // Demo user found - use local mode, skip Supabase entirely
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    set({
+                        user: { ...demoUser, is_demo: true },
+                        isAuthenticated: true,
+                        isLoading: false
+                    });
+                    return true;
+                }
+
+                // Priority 2: Try Supabase for non-demo users
                 if (isSupabaseConfigured()) {
                     try {
                         const { data, error } = await supabase!.auth.signInWithPassword({
@@ -38,7 +53,6 @@ export const useAuthStore = create<AuthState>()(
                         });
 
                         if (!error && data.user) {
-                            // Get profile from profiles table
                             const { data: profile, error: profileError } = await supabase!
                                 .from('profiles')
                                 .select('*')
@@ -55,27 +69,13 @@ export const useAuthStore = create<AuthState>()(
                             }
                         }
                     } catch (err: any) {
-                        console.warn('Supabase login attempt failed:', err.message);
-                        // Fall through to demo mode
+                        console.warn('Supabase login failed:', err.message);
                     }
                 }
 
-                // Option B: Fallback Local Demo Mode
-                await new Promise(resolve => setTimeout(resolve, 800));
-                const userStore = useUserStore.getState();
-                const validatedUser = userStore.validateCredentials(email, password);
-
-                if (validatedUser) {
-                    set({
-                        user: { ...validatedUser, is_demo: true },
-                        isAuthenticated: true,
-                        isLoading: false
-                    });
-                    return true;
-                }
-
+                // No valid user found anywhere
                 set({
-                    error: 'Email ou mot de passe incorrect (Demo Mode)',
+                    error: 'Email ou mot de passe incorrect',
                     isLoading: false
                 });
                 return false;
