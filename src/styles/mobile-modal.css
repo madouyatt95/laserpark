@@ -1,0 +1,198 @@
+/* ============================================
+   Mobile-First Modal Styles
+   Designed for iOS PWA standalone mode
+   ============================================ */
+
+.mobile-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    /* Bottom sheet on mobile */
+    padding: 0;
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* On larger screens, center the modal */
+@media (min-width: 640px) {
+    .mobile-modal-overlay {
+        justify-content: center;
+        padding: var(--spacing-4);
+    }
+}
+
+.mobile-modal-container {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    width: 100%;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease-out;
+    position: relative;
+    /* iOS safe area */
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@media (min-width: 640px) {
+    .mobile-modal-container {
+        border-radius: var(--radius-2xl);
+        max-height: 85vh;
+    }
+}
+
+/* Modal sizes */
+.mobile-modal-sm {
+    max-width: 100%;
+}
+
+.mobile-modal-md {
+    max-width: 100%;
+}
+
+.mobile-modal-lg {
+    max-width: 100%;
+}
+
+@media (min-width: 640px) {
+    .mobile-modal-sm {
+        max-width: 360px;
+    }
+
+    .mobile-modal-md {
+        max-width: 480px;
+    }
+
+    .mobile-modal-lg {
+        max-width: 600px;
+    }
+}
+
+/* Header */
+.mobile-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-4);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+    /* Drag indicator for mobile */
+    position: relative;
+}
+
+.mobile-modal-header::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
+}
+
+@media (min-width: 640px) {
+    .mobile-modal-header::before {
+        display: none;
+    }
+
+    .mobile-modal-header {
+        padding-top: var(--spacing-4);
+    }
+}
+
+.mobile-modal-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0;
+    padding-top: var(--spacing-2);
+}
+
+@media (min-width: 640px) {
+    .mobile-modal-title {
+        padding-top: 0;
+    }
+}
+
+.mobile-modal-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-tertiary);
+    border: none;
+    border-radius: var(--radius-full);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mobile-modal-close:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
+}
+
+/* Content - THIS IS THE KEY PART FOR SCROLL */
+.mobile-modal-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--spacing-4);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Ensure minimum content for scroll */
+    min-height: 100px;
+}
+
+/* Form styles inside modal */
+.mobile-modal-content .form-group {
+    margin-bottom: var(--spacing-4);
+}
+
+.mobile-modal-content .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-3);
+}
+
+.mobile-modal-content .form-actions {
+    margin-top: var(--spacing-6);
+    padding-bottom: var(--spacing-4);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

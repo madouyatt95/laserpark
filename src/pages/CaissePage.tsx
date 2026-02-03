@@ -226,14 +226,13 @@ const CaissePage: React.FC = () => {
             </button>
 
             {/* Activity Form Modal */}
-            {showActivityForm && (
-                <ActivityForm
-                    onClose={() => setShowActivityForm(false)}
-                    onActivityCreated={handleActivityCreated}
-                    parkId={parkId}
-                    userId={user?.id || ''}
-                />
-            )}
+            <ActivityForm
+                isOpen={showActivityForm}
+                onClose={() => setShowActivityForm(false)}
+                onActivityCreated={handleActivityCreated}
+                parkId={parkId}
+                userId={user?.id || ''}
+            />
 
             {/* Receipt Confirmation Modal */}
             {showReceiptConfirm && lastActivity && (

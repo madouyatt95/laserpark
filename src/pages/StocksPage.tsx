@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Package, AlertTriangle, ArrowDownCircle, X, Boxes, Eye } from 'lucide-react';
+import { Plus, Package, AlertTriangle, ArrowDownCircle, Boxes, Eye } from 'lucide-react';
 import { useParkStore } from '../stores/parkStore';
 import { useStockStore } from '../stores/stockStore';
 import { useAuthStore } from '../stores/authStore';
+import MobileModal from '../components/common/MobileModal';
 import '../styles/stocks.css';
 
 // Stock categories for dropdown
@@ -210,149 +211,133 @@ const StocksPage: React.FC = () => {
             )}
 
             {/* Add New Item Modal */}
-            {showAddItem && (
-                <div className="modal-overlay" onClick={() => setShowAddItem(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">Nouvel article de stock</h2>
-                            <button className="modal-close" onClick={() => setShowAddItem(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
+            <MobileModal
+                isOpen={showAddItem}
+                onClose={() => setShowAddItem(false)}
+                title="Nouvel article de stock"
+            >
+                <div className="form-group">
+                    <label className="input-label">Nom de l'article</label>
+                    <input
+                        type="text"
+                        className="input"
+                        placeholder="Ex: Coca-Cola, Batterie laser..."
+                        value={newItem.name}
+                        onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    />
+                </div>
 
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label className="input-label">Nom de l'article</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="Ex: Coca-Cola, Batterie laser..."
-                                    value={newItem.name}
-                                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                                />
-                            </div>
+                <div className="form-group">
+                    <label className="input-label">Catégorie</label>
+                    <select
+                        className="input"
+                        value={newItem.category}
+                        onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                    >
+                        {STOCK_CATEGORIES.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
+                </div>
 
-                            <div className="form-group">
-                                <label className="input-label">Catégorie</label>
-                                <select
-                                    className="input"
-                                    value={newItem.category}
-                                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                                >
-                                    {STOCK_CATEGORIES.map(cat => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label className="input-label">Quantité initiale</label>
-                                    <input
-                                        type="number"
-                                        className="input"
-                                        min="0"
-                                        value={newItem.quantity}
-                                        onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label className="input-label">Seuil minimum</label>
-                                    <input
-                                        type="number"
-                                        className="input"
-                                        min="0"
-                                        value={newItem.min_threshold}
-                                        onChange={(e) => setNewItem({ ...newItem, min_threshold: parseInt(e.target.value) || 0 })}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label className="input-label">Unité</label>
-                                <select
-                                    className="input"
-                                    value={newItem.unit}
-                                    onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
-                                >
-                                    <option value="unités">Unités</option>
-                                    <option value="pièces">Pièces</option>
-                                    <option value="kg">Kilogrammes</option>
-                                    <option value="L">Litres</option>
-                                    <option value="boîtes">Boîtes</option>
-                                    <option value="packs">Packs</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowAddItem(false)}>
-                                Annuler
-                            </button>
-                            <button className="btn btn-primary" onClick={handleAddItem}>
-                                <Plus size={16} />
-                                Créer l'article
-                            </button>
-                        </div>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label className="input-label">Quantité initiale</label>
+                        <input
+                            type="number"
+                            className="input"
+                            min="0"
+                            value={newItem.quantity}
+                            onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="input-label">Seuil minimum</label>
+                        <input
+                            type="number"
+                            className="input"
+                            min="0"
+                            value={newItem.min_threshold}
+                            onChange={(e) => setNewItem({ ...newItem, min_threshold: parseInt(e.target.value) || 0 })}
+                        />
                     </div>
                 </div>
-            )}
+
+                <div className="form-group">
+                    <label className="input-label">Unité</label>
+                    <select
+                        className="input"
+                        value={newItem.unit}
+                        onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                    >
+                        <option value="unités">Unités</option>
+                        <option value="pièces">Pièces</option>
+                        <option value="kg">Kilogrammes</option>
+                        <option value="L">Litres</option>
+                        <option value="boîtes">Boîtes</option>
+                        <option value="packs">Packs</option>
+                    </select>
+                </div>
+
+                <div className="form-actions">
+                    <button className="btn btn-secondary" onClick={() => setShowAddItem(false)}>
+                        Annuler
+                    </button>
+                    <button className="btn btn-primary" onClick={handleAddItem}>
+                        <Plus size={16} />
+                        Créer l'article
+                    </button>
+                </div>
+            </MobileModal>
 
             {/* Stock Movement Modal */}
-            {showAddStock && (
-                <div className="modal-overlay" onClick={() => setShowAddStock(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2 className="modal-title">
-                                {movementType === 'entry' ? 'Entrée de stock' : 'Ajuster le stock'}
-                            </h2>
-                        </div>
-
-                        <div className="modal-body">
-                            <div className="form-section">
-                                <label className="input-label">
-                                    {movementType === 'entry' ? 'Quantité à ajouter' : 'Nouvelle quantité'}
-                                </label>
-                                <input
-                                    type="number"
-                                    className="input input-lg"
-                                    value={quantity || ''}
-                                    onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                                    min="0"
-                                    placeholder="0"
-                                />
-                            </div>
-
-                            <div className="form-section">
-                                <label className="input-label">Raison (optionnel)</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    value={reason}
-                                    onChange={(e) => setReason(e.target.value)}
-                                    placeholder="Ex: Réapprovisionnement, Inventaire..."
-                                />
-                            </div>
-                        </div>
-
-                        <div className="modal-footer">
-                            <button
-                                className="btn btn-secondary"
-                                onClick={() => setShowAddStock(false)}
-                            >
-                                Annuler
-                            </button>
-                            <button
-                                className="btn btn-primary"
-                                onClick={handleSubmitMovement}
-                                disabled={quantity <= 0 && movementType === 'entry'}
-                            >
-                                Confirmer
-                            </button>
-                        </div>
-                    </div>
+            <MobileModal
+                isOpen={showAddStock}
+                onClose={() => setShowAddStock(false)}
+                title={movementType === 'entry' ? 'Entrée de stock' : 'Ajuster le stock'}
+                size="sm"
+            >
+                <div className="form-group">
+                    <label className="input-label">
+                        {movementType === 'entry' ? 'Quantité à ajouter' : 'Nouvelle quantité'}
+                    </label>
+                    <input
+                        type="number"
+                        className="input input-lg"
+                        value={quantity || ''}
+                        onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                        min="0"
+                        placeholder="0"
+                    />
                 </div>
-            )}
+
+                <div className="form-group">
+                    <label className="input-label">Raison (optionnel)</label>
+                    <input
+                        type="text"
+                        className="input"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Ex: Réapprovisionnement, Inventaire..."
+                    />
+                </div>
+
+                <div className="form-actions">
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => setShowAddStock(false)}
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleSubmitMovement}
+                        disabled={quantity <= 0 && movementType === 'entry'}
+                    >
+                        Confirmer
+                    </button>
+                </div>
+            </MobileModal>
         </div>
     );
 };
