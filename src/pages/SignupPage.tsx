@@ -83,8 +83,16 @@ const SignupPage: React.FC = () => {
             setSuccess(true);
         } catch (err: any) {
             console.error('Signup error:', err);
-            if (err.message?.includes('already registered')) {
+            const errorMessage = err.message?.toLowerCase() || '';
+
+            if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
                 setError('Cet email est déjà utilisé');
+            } else if (errorMessage.includes('invalid') && errorMessage.includes('email')) {
+                setError('Format d\'email invalide. Vérifiez votre adresse email.');
+            } else if (errorMessage.includes('password')) {
+                setError('Le mot de passe ne respecte pas les exigences de sécurité.');
+            } else if (errorMessage.includes('rate') || errorMessage.includes('limit')) {
+                setError('Trop de tentatives. Veuillez réessayer dans quelques minutes.');
             } else {
                 setError(err.message || 'Erreur lors de l\'inscription');
             }

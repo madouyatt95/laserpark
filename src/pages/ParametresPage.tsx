@@ -44,7 +44,7 @@ const ParametresPage: React.FC = () => {
     const [showPinLock, setShowPinLock] = useState(false);
     const [showAddUser, setShowAddUser] = useState(false);
     const [showEditUser, setShowEditUser] = useState(false);
-    const [showClearDataConfirm, setShowClearDataConfirm] = useState(false);
+    const [isRefreshingData, setIsRefreshingData] = useState(false);
     const [editingUser, setEditingUser] = useState<UserType | null>(null);
     const [supabaseUsers, setSupabaseUsers] = useState<UserType[]>([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -202,19 +202,26 @@ const ParametresPage: React.FC = () => {
         }
     };
 
-    const handleClearCaisseData = () => {
-        if (!confirm('⚠️ Effacer toutes les transactions locales ?\n\nCette action supprimera uniquement les données de caisse stockées localement (activités et dépenses).\n\nLes données dans Supabase ne seront PAS affectées.')) {
+    // Refresh data from Supabase (instead of destructive clear)
+    const handleRefreshData = async () => {
+        if (!isSupabaseConfigured()) {
+            alert('Supabase non configuré.');
             return;
         }
 
-        // Only clear activities and expenses from localStorage
-        // DO NOT clear parks, categories, auth, or other critical stores
-        localStorage.removeItem('laserpark-activities');
-        localStorage.removeItem('laserpark-expenses');
-        localStorage.removeItem('laserpark-closures');
+        setIsRefreshingData(true);
+        try {
+            // Clear local cache and reload from Supabase
+            localStorage.removeItem('laserpark-activities');
+            localStorage.removeItem('laserpark-expenses');
 
-        // Reload the page to reset stores
-        window.location.reload();
+            // Reload the page to fetch fresh data from Supabase
+            window.location.reload();
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+            alert('Erreur lors du rafraîchissement.');
+            setIsRefreshingData(false);
+        }
     };
 
     const getRoleBadge = (role: UserRole | null) => {
@@ -445,20 +452,28 @@ const ParametresPage: React.FC = () => {
                     <div className="data-actions">
                         <div className="data-action-item">
                             <div className="data-action-info">
-                                <AlertTriangle size={20} color="var(--color-warning)" />
+                                <RefreshCw size={20} color="var(--color-primary)" />
                                 <div>
-                                    <span className="data-action-label">Effacer les données de caisse</span>
-                                    <span className="data-action-description">Supprime toutes les transactions et dépenses locales</span>
+                                    <span className="data-action-label">Actualiser les données</span>
+                                    <span className="data-action-description">Recharge les données depuis Supabase (efface le cache local)</span>
                                 </div>
                             </div>
                             <button
-                                className="btn btn-sm btn-danger"
-                                onClick={() => setShowClearDataConfirm(true)}
+                                className="btn btn-sm btn-primary"
+                                onClick={handleRefreshData}
+                                disabled={isRefreshingData}
                             >
-                                <Trash2 size={14} />
-                                Effacer
+                                {isRefreshingData ? (
+                                    <span className="spinner-inline" />
+                                ) : (
+                                    <RefreshCw size={14} />
+                                )}
+                                Actualiser
                             </button>
                         </div>
+                        <p className="settings-section-note">
+                            💡 Les transactions sont stockées dans Supabase. Cette action recharge les données fraîches depuis le serveur.
+                        </p>
                     </div>
                 </section>
             )}
@@ -554,31 +569,6 @@ const ParametresPage: React.FC = () => {
                     </button>
                     <button className="btn btn-primary" onClick={handleSaveUserEdit}>
                         Sauvegarder
-                    </button>
-                </div>
-            </MobileModal>
-
-            {/* Clear Data Confirmation Modal */}
-            <MobileModal
-                isOpen={showClearDataConfirm}
-                onClose={() => setShowClearDataConfirm(false)}
-                title="Confirmer la suppression"
-            >
-                <div className="confirm-delete-content">
-                    <AlertTriangle size={48} color="var(--color-danger)" />
-                    <p>Êtes-vous sûr de vouloir supprimer <strong>toutes les données de caisse</strong> ?</p>
-                    <p className="text-muted" style={{ fontSize: '0.85rem' }}>
-                        Cette action supprimera toutes les transactions et dépenses stockées localement.
-                        Les données Supabase ne seront pas affectées.
-                    </p>
-                </div>
-                <div className="form-actions">
-                    <button className="btn btn-secondary" onClick={() => setShowClearDataConfirm(false)}>
-                        Annuler
-                    </button>
-                    <button className="btn btn-danger" onClick={handleClearCaisseData}>
-                        <Trash2 size={16} />
-                        Supprimer tout
                     </button>
                 </div>
             </MobileModal>
